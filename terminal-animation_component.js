@@ -10,7 +10,7 @@
  * <terminal-animation>
  *      <terminal-line type="input">First input line</terminal-line>
  *      <terminal-line type="input">Second input line</terminal-line>
- *      <terminal-line type="input">Thirs <span>input with span</span></terminal-line>
+ *      <terminal-line type="input">Third <span>input with span</span></terminal-line>
  *      <terminal-line>First output line</terminal-line>
  * </terminal-animation>
  * 
@@ -25,14 +25,14 @@
  * The <terminal-line> tag allows only text nodes or <span> tags inside it. All the other nodes will be removed.
  * E.g.:
  * <terminal-line>All this line will be <span>kept</span></terminal-line>
- * <terminal-line>This will be kept <div>but this not</div></terminal-line>
+ * <terminal-line>This will be kept but <div>this will be removed</div></terminal-line>
  * 
- * The animation starts only when the terminal becomes visible (with a certain threshold), unless the 'init'
+ * The animation starts only when the terminal becomes visible, unless the 'init'
  * attribute is present (in that case the animation starts right after the page loads).
  * To know all the other possible attributes and what they do please read the specific components.
  * 
  * 
- * List of sub-components editable with the ::part pseudo-element:
+ * List of sub-components editable with the CSS ::part pseudo-element:
  * - Terminal Container -> ::part(terminal-container)
  * - Fast Button -> ::part(fast-button)
  * - Restart Button -> ::part(restart-button)
@@ -146,7 +146,6 @@ class TerminalAnimation extends HTMLElement {
         const shadow = this.attachShadow({ mode: "open" });
         shadow.appendChild(terminalTemplate.content.cloneNode(true));
         this.DATA_TYPES = ['input','prompt','progress','output'];
-        this.ALLOWED_TAGS = ["terminal-line","img"];
         const container = this.shadowRoot.querySelector(".terminal-container");
         if (this.hasAttribute('lineDelay')) {
             container.setAttribute('lineDelay',parseFloat(this.getAttribute('lineDelay')))
@@ -288,14 +287,14 @@ class TerminalAnimation extends HTMLElement {
         }
     }
 
-    keepLines(elementList=this.ALLOWED_TAGS) {
+    keepLines() {
         /*
         * Delete all terminal lines without tags or whose tags are not within the elementList
         * and create the lines property with the kept ones.
         */
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
-            if (!elementList.includes(node.tagName?.toLowerCase())) {
+            if (node.tagName?.toLowerCase() != 'terminal-line') {
                 node.remove();
                 i--;
             }
@@ -338,14 +337,6 @@ class TerminalAnimation extends HTMLElement {
         this.lines.forEach(line => this.hide(line));
     }
 
-    hidePS1AndBeforeCharElements() {
-        // this.lines.forEach(line => {
-        //     this.hide(line.PS1Element);
-        //     this.hide(line.promptCharElement);
-        // })
-        console.log("CONTROL 'hidePS1AndBeforeCharElements' FUNCTION")
-    }
-
     generateRestartButton() {
         /**
         * Generate restart button and adds it hidden to 'this.container'
@@ -354,6 +345,7 @@ class TerminalAnimation extends HTMLElement {
         restart.setAttribute('part','restart-button')
         restart.onclick = e => {
             e.preventDefault();
+            this.hidePS1AndPromptChar();
             this.initialiseAnimation();
         }
         restart.href = '';
@@ -414,12 +406,23 @@ class TerminalAnimation extends HTMLElement {
         this.resetDelays()
     }
     
+    hidePS1AndPromptChar() {
+        this.lines.forEach(line => {
+            let ps1 = line.shadowRoot.querySelector('.ps1');
+            let prompt = line.shadowRoot.querySelector('.promptChar');
+            if (ps1) {
+                this.hide(ps1);
+            } else if (prompt) {
+                this.hide(prompt);
+            }
+        })
+    }
+
     async initialiseAnimation() {
          /**
          * Start the animation and render the lines
          */
         this.hideLines();
-        this.hidePS1AndBeforeCharElements();
         await this.typeContent();
         this.show(this.restartButton);
     }
@@ -514,25 +517,25 @@ lineTemplate.innerHTML = `
             color: var(--color-text-inputchar);
         }
 
-        ::slotted(span::after) {
-            content: '_';
-            font-family: monospace;
-            -webkit-animation: blink 1s infinite;
-                    animation: blink 1s infinite;
-        }
+        // ::slotted(span::after) {
+        //     content: '_';
+        //     font-family: monospace;
+        //     -webkit-animation: blink 1s infinite;
+        //             animation: blink 1s infinite;
+        // }
 
-        /* Cursor animation */
-        @-webkit-keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
+        // /* Cursor animation */
+        // @-webkit-keyframes blink {
+        //     50% {
+        //         opacity: 0;
+        //     }
+        // }
 
-        @keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
+        // @keyframes blink {
+        //     50% {
+        //         opacity: 0;
+        //     }
+        // }
     </style>
     
     <body>
@@ -743,11 +746,11 @@ class TerminalLine extends HTMLElement {
     }
 
     async showPS1() {
-        this.show(this.shadowRoot.querySelector('.hasPS1'));
+        this.show(this.shadowRoot.querySelector('.ps1'));
     }
     
     async showPromptChar() {
-        this.show(this.shadowRoot.querySelector('.hasPromptChar'));
+        this.show(this.shadowRoot.querySelector('.promptChar'));
     }
 
     async type() {
@@ -814,7 +817,7 @@ class TerminalLine extends HTMLElement {
         if (this.data == 'prompt') {
             let promptChar = document.createElement('div');
             promptChar.innerHTML = this.promptChar;
-            promptChar.classList.add('hasPromptChar');
+            promptChar.classList.add('promptChar');
             this.show(promptChar);
             this.insertBefore(promptChar,this.firstChild)
         }
@@ -825,13 +828,13 @@ class TerminalLine extends HTMLElement {
         elem.style.display="inline";
         if (this.data == 'input') {
             elem.innerHTML = this.PS1;
-            elem.classList.add('hasPS1');
+            elem.classList.add('ps1');
             this.PS1Element = elem;
             this.hide(elem);
             this.line.insertBefore(elem,this.line.firstChild)
         } else if (this.data == 'prompt') {
             elem.innerHTML = `${this.promptChar} `;
-            elem.classList.add('hasPromptChar');
+            elem.classList.add('promptChar');
             this.promptCharElement = elem;
             this.hide(elem);
             this.line.insertBefore(elem,this.line.firstChild)
