@@ -111,7 +111,7 @@ terminalTemplate.innerHTML = `
         
         ::slotted(*) {
             line-height: 2;
-            display: flex;
+            display: inline;
             justify-self: center;
         }
     </style>
@@ -741,12 +741,16 @@ class TerminalLine extends HTMLElement {
 
     keepNodes(elementList=this.ALLOWED_NODES) {
         /*
-        * Delete all line nodes whose tags are not within the elementList
+        * Delete all line nodes whose tags are not within the elementList, 
+        * create <span> tags around textNodes,
         * and create the nodes property with the kept ones.
         */
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
-            if (node.nodeType != 3 && !elementList.includes(node.tagName.toLowerCase())) {
+            if (node.nodeType == 3) {
+                // let span = document.createElement('span');
+                // span.appendChild(node);
+            } else if (!elementList.includes(node.tagName.toLowerCase())) {
                 node.remove();
                 i--;
             }
@@ -848,6 +852,7 @@ class TerminalLine extends HTMLElement {
 
     async generatePS1AndPromptCharElements() {
         let elem = document.createElement('div');
+        elem.style.display="inline";
         if (this.data == 'input') {
             elem.innerHTML = this.PS1;
             elem.classList.add('hasPS1');
