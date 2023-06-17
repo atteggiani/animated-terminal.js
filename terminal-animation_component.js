@@ -107,12 +107,6 @@ terminalTemplate.innerHTML = `
         
         .restart-button:hover {
             color: var(--color-control-buttons-hover);
-        }   
-        
-        ::slotted(*) {
-            line-height: 2;
-            display: inline;
-            justify-self: center;
         }
     </style>
 
@@ -262,7 +256,7 @@ class TerminalAnimation extends HTMLElement {
         if (this.hasAttribute('PS1')) {
             return this.getAttribute('PS1');
         } else {
-            return `<span class="hasDirectory">${this.directory}</span><span class="hasInputChar">${this.inputChar}&nbsp;</span>`;
+            return `<span class="directory">${this.directory}</span><span class="inputChar">${this.inputChar}&nbsp;</span>`;
         }
     }
 
@@ -352,13 +346,6 @@ class TerminalAnimation extends HTMLElement {
         console.log("CONTROL 'hidePS1AndBeforeCharElements' FUNCTION")
     }
 
-    fixHeight() {
-        /*
-        * Fix the height of the terminal to avoid it changing during the animation.
-        */
-        this.container.style.height=getComputedStyle(this.container).height;
-    }
-
     generateRestartButton() {
         /**
         * Generate restart button and adds it hidden to 'this.container'
@@ -410,7 +397,6 @@ class TerminalAnimation extends HTMLElement {
         this.hideLines();
         this.generateRestartButton();
         this.generateFastButton();
-        this.fixHeight();
     }
 
     async typeContent() {
@@ -511,71 +497,46 @@ lineTemplate.innerHTML = `
             --color-text-prompt: #a2a2a2;
             --color-text-directory: #A6CE39;
             --color-text-symlink: #06AEEF;
+            --color-text-inputchar: #FAA619;
         }
 
-        // :host-context(terminal-animation) {
-        //     line-height: 2;
-        //     display: flex;
-        //     justify-self: center;
-        // }
-
-        :host(.hasDirectory) {
-            color: green;
+        div.terminal-line {
+            line-height: 2;
+            display: inline;
+            justify-self: center;
         }
-        ::slotted(*.hasDirectory) {
+
+        span.directory {
             color: var(--color-text-directory);
         }
-
-        // .hasCursor::after {
-        //     content: 'CURSOR';
-        //     font-family: monospace;
-        //     -webkit-animation: blink 1s infinite;
-        //             animation: blink 1s infinite;
-        // }
         
-        // div.hasPS1 {
-        //     white-space: pre;
-        // }
-        
-        // .hasDirectory {
-        //     color: #A6CE39;
-        // }
-        
-        // span.hasInputChar {
-        //     white-space: pre;
-        //     color: #FAA619;
-        // }
+        span.inputChar {
+            color: var(--color-text-inputchar);
+        }
 
-        // /* Cursor animation */
-        // @-webkit-keyframes blink {
-        //     50% {
-        //         opacity: 0;
-        //     }
-        // }
+        ::slotted(span::after) {
+            content: '_';
+            font-family: monospace;
+            -webkit-animation: blink 1s infinite;
+                    animation: blink 1s infinite;
+        }
 
-        // @keyframes blink {
-        //     50% {
-        //         opacity: 0;
-        //     }
-        // }
+        /* Cursor animation */
+        @-webkit-keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
 
-        // [data]::before {
-        // }
-
-        // ::slotted([data='prompt']::before) {
-        //     content: 'PROMPTCHAR';
-        //     color: #a2a2a2;
-        // }
-
-        // [data="input"][directory]::before {
-        //     content: attr(directory);
-        //     color: var(--color-text-directory);
-        // }
-        
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
     </style>
     
     <body>
-        <slot></slot>
+        <div class='terminal-line'><slot></slot><div>
     </body>
     
 `
@@ -607,6 +568,7 @@ class TerminalLine extends HTMLElement {
         shadow.appendChild(lineTemplate.content.cloneNode(true));
         this.ALLOWED_NODES = ["span"];
         this.container = this.parentElement;
+        this.line = this.shadowRoot.querySelector(".terminal-line");
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
     }
@@ -733,7 +695,7 @@ class TerminalLine extends HTMLElement {
         if (this.hasAttribute('PS1')) {
             return this.getAttribute('PS1');
         } else if (this.hasAttribute('directory') || this.hasAttribute('inputChar')) {
-            return `<span class="hasDirectory">${this.directory}</span><span class="hasInputChar">${this.inputChar}&nbsp;</span>`;
+            return `<span class="directory">${this.directory}</span><span class="inputChar">${this.inputChar}&nbsp;</span>`;
         } else {
             return this.container.PS1;
         }
@@ -748,8 +710,9 @@ class TerminalLine extends HTMLElement {
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
             if (node.nodeType == 3) {
-                // let span = document.createElement('span');
-                // span.appendChild(node);
+                let span = document.createElement('span');
+                this.insertBefore(span,node);
+                span.appendChild(node);
             } else if (!elementList.includes(node.tagName.toLowerCase())) {
                 node.remove();
                 i--;
@@ -779,14 +742,21 @@ class TerminalLine extends HTMLElement {
         return new Promise(resolve => setTimeout(resolve, time));
     }
 
+    async showPS1() {
+        this.show(this.shadowRoot.querySelector('.hasPS1'));
+    }
+    
+    async showPromptChar() {
+        this.show(this.shadowRoot.querySelector('.hasPromptChar'));
+    }
+
     async type() {
         /**
         * Function that handles the animation of the current line based on its data property
         */
-
         if (this.data == 'input') {
-            this.show(this.PS1Element);
-            await this.addCursor();
+            await this.showPS1();
+            this.addCursor();
             await this.sleep(this.lineDelay);
             await this.typeInput();
         } else if (this.data == 'progress') {
@@ -794,15 +764,15 @@ class TerminalLine extends HTMLElement {
             // await this.sleep(lineDelay);
             return;
         } else if (this.data == 'prompt') {
-            this.show(this.promptCharElement);
-            await this.addCursor();
+            await this.showPromptChar();
+            this.addCursor();
             await this.sleep(this.lineDelay);
             await this.typeInput();
         } else {
             await this.sleep(this.lineDelay);
             this.show()
         }
-        this.removeCursor();
+        // this.removeCursor();
     }
 
     async typeInput() {
@@ -832,12 +802,12 @@ class TerminalLine extends HTMLElement {
         return textArray;
     }
 
-    async addCursor() {
-        this.classList.add('hasCursor');
+    addCursor() {
+        this.nodes.forEach(node => node.classList.add('cursor'));
     }
     
     async removeCursor() {
-        this.classList.remove('hasCursor');
+        this.line.classList.remove('cursor');
     }
 
     async insertPromptChar() {
@@ -858,13 +828,13 @@ class TerminalLine extends HTMLElement {
             elem.classList.add('hasPS1');
             this.PS1Element = elem;
             this.hide(elem);
-            this.insertBefore(elem,this.firstChild)
+            this.line.insertBefore(elem,this.line.firstChild)
         } else if (this.data == 'prompt') {
-            elem.innerHTML = this.promptChar;
+            elem.innerHTML = `${this.promptChar} `;
             elem.classList.add('hasPromptChar');
             this.promptCharElement = elem;
             this.hide(elem);
-            this.insertBefore(elem,this.firstChild)
+            this.line.insertBefore(elem,this.line.firstChild)
         }
     }
 }
