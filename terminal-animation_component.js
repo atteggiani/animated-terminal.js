@@ -123,28 +123,30 @@ terminalTemplate.innerHTML = `
 /* Terminal component */
 class TerminalAnimation extends HTMLElement {
     /**
-     * Custom attributes for the <terminal-animation> component:
-     * * @param {string} data - Type of prompt for each line of the entire terminal. Choices can be:
-    //  *   - 'output': Output of the terminal. Written all at once; (default)
-    //  *   - 'input': Input to the terminal. Written with typing animation after 'directory' and 'inputChar' attributes;
-    //  *   - 'prompt': Same as input, but with written with typing animation after 'promptChar' attribute;
-    //  *   - 'progress' Line with progress bar animation.
-    //  * @param {number || string} startDelay - Delay before the start of terminal animation, in ms.
-    //  * @param {number || string} lineDelay - Delay before the start of each terminal line animation, in ms.
-    //  * @param {number || string} typingDelay - Delay between each typed character in the terminal, in ms.
-    //  * @param {number || string} progressLength - Number of characters displayed as progress bar for the entire terminal.
-    //  * @param {string} progressChar – Character(s) to use for progress bar for the entire terminal, defaults to █.
-	//  * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
-    //  * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
-    //  * @param {string} inputChar – Character(s) to use before the 'input' prompt for the entire terminal, defaults to '$'.
-    //  * @param {string} directory – Directory to write in the 'input' prompt before the input character for the entire terminal.
-    //  * @param {string} promptChar – Character(s) to use before the 'prompt' prompt for the entire terminal, defaults to '>>>'.
-    //  * @param {string} PS1 – String to write in the 'input' prompt before the actual line for the entire terminal. 
-            If present, any 'directory' or 'input' attribute will be disregarded.
-            Accepts HTML format. E.g.: "This is a <span style='color: green;'>valid</span> PS1 attribute"
-    //  * @param {boolean} init - Initialise the terminal animation at page load.
-    //  * @param {boolean} static - Create a static terminal without animation.
-    //  */
+    * Custom attributes for the <terminal-animation> component:
+    * 
+    * @param {string} mode - 'light' for light mode; 'dark' for dark mode (default).
+    * @param {string} data - Type of prompt for each line of the entire terminal. Choices can be:
+    *   - 'output': Output of the terminal. Written all at once; (default)
+    *   - 'input': Input to the terminal. Written with typing animation after 'directory' and 'inputChar' attributes;
+    *   - 'prompt': Same as input, but with written with typing animation after 'promptChar' attribute;
+    *   - 'progress' Line with progress bar animation.
+    * @param {number || string} startDelay - Delay before the start of terminal animation, in ms.
+    * @param {number || string} lineDelay - Delay before the start of each terminal line animation, in ms.
+    * @param {number || string} typingDelay - Delay between each typed character in the terminal, in ms.
+    * @param {number || string} progressLength - Number of characters displayed as progress bar for the entire terminal.
+    * @param {string} progressChar – Character(s) to use for progress bar for the entire terminal, defaults to █.
+    * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
+    * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
+    * @param {string} inputChar – Character(s) to use before the 'input' prompt for the entire terminal, defaults to '$'.
+    * @param {string} directory – Directory to write in the 'input' prompt before the input character for the entire terminal.
+    * @param {string} promptChar – Character(s) to use before the 'prompt' prompt for the entire terminal, defaults to '>>>'.
+    * @param {string} PS1 – String to write in the 'input' prompt before the actual line for the entire terminal. 
+    *  If present, any 'directory' or 'input' attribute will be disregarded.
+    *  Accepts HTML format. E.g.: "This is a <span style='color: green;'>valid</span> PS1 attribute"
+    * @param {boolean} init - Initialise the terminal animation at page load.
+    * @param {boolean} static - Create a static terminal without animation.
+    */
     constructor() {
         super();
         const shadow = this.attachShadow({ mode: "open" });
@@ -160,7 +162,7 @@ class TerminalAnimation extends HTMLElement {
         }
         this.container = container;
         this.keepLines();
-        this.resetDelays()
+        this.resetDelays();
         if (!this.static) {
             this.setTerminal();
             if (this.init) {
@@ -168,7 +170,15 @@ class TerminalAnimation extends HTMLElement {
             }
         }
     }
-    
+
+    get mode() {
+        if (this.getAttribute('mode')?.toString().toLowerCase() == 'light') {
+            return 'light';
+        } else {
+            return 'dark';
+        }
+    }
+
     get data() {
         /**
         * Getter for the data property
@@ -334,6 +344,14 @@ class TerminalAnimation extends HTMLElement {
         this.lines.forEach(line => this.hide(line));
     }
 
+    hidePS1AndBeforeCharElements() {
+        // this.lines.forEach(line => {
+        //     this.hide(line.PS1Element);
+        //     this.hide(line.promptCharElement);
+        // })
+        console.log("CONTROL 'hidePS1AndBeforeCharElements' FUNCTION")
+    }
+
     fixHeight() {
         /*
         * Fix the height of the terminal to avoid it changing during the animation.
@@ -415,6 +433,7 @@ class TerminalAnimation extends HTMLElement {
          * Start the animation and render the lines
          */
         this.hideLines();
+        this.hidePS1AndBeforeCharElements();
         await this.typeContent();
         this.show(this.restartButton);
     }
@@ -589,6 +608,7 @@ class TerminalLine extends HTMLElement {
         this.ALLOWED_NODES = ["span"];
         this.container = this.parentElement;
         this.keepNodes();
+        this.generatePS1AndPromptCharElements();
     }
     
     get data() {
@@ -761,9 +781,8 @@ class TerminalLine extends HTMLElement {
         */
 
         if (this.data == 'input') {
-            // await this.insertPS1();
+            this.show(this.PS1Element);
             await this.addCursor();
-            // this._lineDelay;
             await this.sleep(this.lineDelay);
             await this.typeInput();
         } else if (this.data == 'progress') {
@@ -771,7 +790,7 @@ class TerminalLine extends HTMLElement {
             // await this.sleep(lineDelay);
             return;
         } else if (this.data == 'prompt') {
-            // await this.promptChar();
+            this.show(this.promptCharElement);
             await this.addCursor();
             await this.sleep(this.lineDelay);
             await this.typeInput();
@@ -817,15 +836,32 @@ class TerminalLine extends HTMLElement {
         this.classList.remove('hasCursor');
     }
 
-    async insertPS1() {
-        // Add a little delay
-        await this.sleep(15)
-        let ps1 = document.createElement('div');
-        ps1.innerHTML = this.PS1;
-        ps1.classList.add('hasPS1');
-        this.show(ps1)
-        this.insertBefore(ps1,this.firstChild)
-    };
+    async insertPromptChar() {
+        if (this.data == 'prompt') {
+            let promptChar = document.createElement('div');
+            promptChar.innerHTML = this.promptChar;
+            promptChar.classList.add('hasPromptChar');
+            this.show(promptChar);
+            this.insertBefore(promptChar,this.firstChild)
+        }
+    }
+
+    async generatePS1AndPromptCharElements() {
+        let elem = document.createElement('div');
+        if (this.data == 'input') {
+            elem.innerHTML = this.PS1;
+            elem.classList.add('hasPS1');
+            this.PS1Element = elem;
+            this.hide(elem);
+            this.insertBefore(elem,this.firstChild)
+        } else if (this.data == 'prompt') {
+            elem.innerHTML = this.promptChar;
+            elem.classList.add('hasPromptChar');
+            this.promptCharElement = elem;
+            this.hide(elem);
+            this.insertBefore(elem,this.firstChild)
+        }
+    }
 }
 
 customElements.define("terminal-animation", TerminalAnimation)
