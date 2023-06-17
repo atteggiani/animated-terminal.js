@@ -10,25 +10,52 @@
  * <terminal-animation>
  *      <terminal-line type="input">First input line</terminal-line>
  *      <terminal-line type="input">Second input line</terminal-line>
+ *      <terminal-line type="input">Thirs <span>input with span</span></terminal-line>
  *      <terminal-line>First output line</terminal-line>
  * </terminal-animation>
+ * 
+ * The <terminal-animation> tag allows only <terminal-line> and <img> tags inside it. All the other nodes will be removed.
+ * E.g.:
+ * <terminal-animation>
+ *      This line will be removed
+ *      <terminal-line>This line will be kept</terminal-line>
+ *      <div>Also this line will be removed</div>
+ * </terminal-animation>
+ *
+ * The <terminal-line> tag allows only text nodes or <span> tags inside it. All the other nodes will be removed.
+ * E.g.:
+ * <terminal-line>All this line will be <span>kept</span></terminal-line>
+ * <terminal-line>This will be kept <div>but this not</div></terminal-line>
  * 
  * The animation starts only when the terminal becomes visible (with a certain threshold), unless the 'init'
  * attribute is present (in that case the animation starts right after the page loads).
  * To know all the other possible attributes and what they do please read the specific components.
+ * 
+ * 
+ * List of sub-components editable with the ::part pseudo-element:
+ * - Terminal Container -> ::part(terminal-container)
+ * - Fast Button -> ::part(fast-button)
+ * - Restart Button -> ::part(restart-button)
+ * 
+ * 
 */
-
-
 'use strict';
 
-const terminalTemplate = document.createElement("template");
+const terminalTemplate = document.createElement('template');
 terminalTemplate.innerHTML = `
     <style>
+        :host {
+            --color-bg: #252a33;
+            --color-text: #eee;
+            --color-control-buttons: #FAA619;
+            --color-control-buttons-hover: #115D97;
+        }
+
         div.terminal-container {
             max-width: 100%;
             margin: 20px 20px 20px 20px;
-            background: #252a33;
-            color: #eee;
+            background-color: var(--color-bg);
+            color: var(--color-text);
             display: flex;
             flex-direction: column;
             justify-content: flex-start;
@@ -58,37 +85,41 @@ terminalTemplate.innerHTML = `
                     box-shadow: 0px 0 0 #d9515d, 25px 0 0 #f4c025, 50px 0 0 #3ec930;
         }
         
-        .restart-button {
-            position: absolute;
-            text-decoration: none;
-            bottom: 7px;
-            right: 7px;
-            color: #115D97;
-        }
-        
-        .restart-button:hover {
-            color: #FAA619;
-        }
-
         .fast-button {
             position: absolute;
             text-decoration: none;
             top: 7px;
             right: 7px;
-            color: #115D97;
+            color: var(--color-control-buttons);
         }
         
         .fast-button:hover {
-            color: #FAA619;
+            color: var(--color-control-buttons-hover);
         }
-
+            
+        .restart-button {
+            position: absolute;
+            text-decoration: none;
+            bottom: 7px;
+            right: 7px;
+            color: var(--color-control-buttons);
+        }
+        
+        .restart-button:hover {
+            color: var(--color-control-buttons-hover);
+        }   
+        
+        ::slotted(*) {
+            line-height: 2;
+            display: flex;
+            justify-self: center;
+        }
     </style>
-    
-    <div class='terminal-container'>
+
+    <div class='terminal-container' part="terminal-container">
         <slot></slot>
     </div>
 `
-
 /* Terminal component */
 class TerminalAnimation extends HTMLElement {
     /**
@@ -106,40 +137,38 @@ class TerminalAnimation extends HTMLElement {
 	//  * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
     //  * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
     //  * @param {string} inputChar – Character(s) to use before the 'input' prompt for the entire terminal, defaults to '$'.
+    //  * @param {string} directory – Directory to write in the 'input' prompt before the input character for the entire terminal.
     //  * @param {string} promptChar – Character(s) to use before the 'prompt' prompt for the entire terminal, defaults to '>>>'.
-    //  * @param {string} directory – If present, directory to write before the input character for the entire terminal.
+    //  * @param {string} PS1 – String to write in the 'input' prompt before the actual line for the entire terminal. 
+            If present, any 'directory' or 'input' attribute will be disregarded.
+            Accepts HTML format. E.g.: "This is a <span style='color: green;'>valid</span> PS1 attribute"
     //  * @param {boolean} init - Initialise the terminal animation at page load.
     //  * @param {boolean} static - Create a static terminal without animation.
     //  */
     constructor() {
         super();
         const shadow = this.attachShadow({ mode: "open" });
-        shadow.append(terminalTemplate.content.cloneNode(true));
-        this.DATA_TYPES = ['output','input','prompt','progress'];
-        this.container = shadow.querySelector(".terminal-container");        
-        this.startDelayOriginal = this.startDelay =
-            parseFloat(this.getAttribute('startDelay')) || 500;
-        this.lineDelayOriginal = this.lineDelay =
-            parseFloat(this.getAttribute('lineDelay')) || 1000;
-        this.typingDelayOriginal = this.typingDelay =
-            parseFloat(this.getAttribute('typingDelay')) || 80;
-        this.progressLength = parseFloat(this.getAttribute('progressLength')) || 40;
-        this.progressChar = this.getAttribute('progressChar')?.toString() || '█';
-        this.progressPercent = parseFloat(this.getAttribute('progressPercent')) || 100;
-        this.cursor = this.getAttribute('cursor')?.toString() || '▋';
-        this.inputChar = this.getAttribute('inputChar')?.toString() || '$';
-        this.promptChar = this.getAttribute('promptChar')?.toString() || '>>>';
-        this.directory = this.getAttribute('directory')?.toString() || '';
-        // this.data = this.DATA_TYPES.includes(this.getAttribute('data')) ? this.getAttribute('data') : 'output';
-        this.keepLines(["terminal-line","img"]);
-        if (!this.hasAttribute('static')) {
+        shadow.appendChild(terminalTemplate.content.cloneNode(true));
+        this.DATA_TYPES = ['input','prompt','progress','output'];
+        this.ALLOWED_TAGS = ["terminal-line","img"];
+        const container = this.shadowRoot.querySelector(".terminal-container");
+        if (this.hasAttribute('lineDelay')) {
+            container.setAttribute('lineDelay',parseFloat(this.getAttribute('lineDelay')))
+        }
+        if (this.hasAttribute('typingDelay')) {
+            container.setAttribute('typingDelay',parseFloat(this.getAttribute('typingDelay')))
+        }
+        this.container = container;
+        this.keepLines();
+        this.resetDelays()
+        if (!this.static) {
             this.setTerminal();
-            if (this.hasAttribute('init')) {
-                this.init();
+            if (this.init) {
+                this.initialiseAnimation();
             }
         }
     }
-
+    
     get data() {
         /**
         * Getter for the data property
@@ -152,10 +181,113 @@ class TerminalAnimation extends HTMLElement {
         }
     }
 
-    keepLines(elementList) {
+    get startDelay() {
         /**
+        * Resets startDelay property.
+        */
+       return parseFloat(this.getAttribute('startDelay')) || 300;
+    }
+    
+    get progressLength() {
+        /**
+        * Getter for the progressLength property
+        */
+        return parseFloat(this.getAttribute('progressLength')) || 40;
+    }
+    
+    get progressChar() {
+        /**
+        * Getter for the progressChar property
+        */
+        return this.getAttribute('progressChar')?.toString() || '█';
+    }
+    
+    get progressPercent() {
+        /**
+        * Getter for the progressPercent property
+        */
+        return parseFloat(this.getAttribute('progressPercent')) || 100;
+    }
+    
+    get cursor() {
+        /**
+        * Getter for the cursor property
+        */
+        return this.getAttribute('cursor')?.toString() || '▋';
+    }
+    
+    get inputChar() {
+        /**
+        * Getter for the inputChar property
+        */
+        if (this.hasAttribute('PS1')) {
+            return '';
+        } else {
+            return this.getAttribute('inputChar')?.toString() || '$';
+        }
+    }
+    
+    get promptChar() {
+        /**
+        * Getter for the promptChar property
+        */
+        return this.getAttribute('promptChar')?.toString() || '>>>';
+    }
+    
+    get directory() {
+        /**
+        * Getter for the directory property
+        */
+        if (this.hasAttribute('PS1')) {
+            return '';
+        } else {
+            return this.getAttribute('directory')?.toString() || '';
+        }
+    }
+
+    get PS1() {
+        /**
+        * Getter for the PS1 property
+        */
+        if (this.hasAttribute('PS1')) {
+            return this.getAttribute('PS1');
+        } else {
+            return `<span class="hasDirectory">${this.directory}</span><span class="hasInputChar">${this.inputChar}&nbsp;</span>`;
+        }
+    }
+
+    get static() {
+        /**
+        * Getter for the static property
+        */
+        let attr = this.getAttribute('static')
+        if (attr == 'false') {
+            return false
+        } else if (attr == "") {
+            return true
+        } else {
+            return !!attr
+        }
+    }
+    
+    get init() {
+        /**
+        * Getter for the init property
+        */
+        let attr = this.getAttribute('init')
+        if (attr == 'false') {
+            return false
+        } else if (attr == "") {
+            return true
+        } else {
+            return !!attr
+        }
+    }
+
+    keepLines(elementList=this.ALLOWED_TAGS) {
+        /*
         * Delete all terminal lines without tags or whose tags are not within the elementList
-        * and make the array 'this.lines' with the kept ones.
+        * and create the lines property with the kept ones.
         */
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
@@ -188,13 +320,25 @@ class TerminalAnimation extends HTMLElement {
         return new Promise(resolve => setTimeout(resolve, time));
     }
     
+    resetDelays() {
+        this.lines.forEach(line => {
+            line._lineDelay;
+            line._typingDelay;
+        })
+    }
+
     hideLines() {
         /**
         * Hide lines inside the terminal
         */
         this.lines.forEach(line => this.hide(line));
+    }
 
-        // this.insertCharBeforeInput();
+    fixHeight() {
+        /*
+        * Fix the height of the terminal to avoid it changing during the animation.
+        */
+        this.container.style.height=getComputedStyle(this.container).height;
     }
 
     generateRestartButton() {
@@ -202,15 +346,17 @@ class TerminalAnimation extends HTMLElement {
         * Generate restart button and adds it hidden to 'this.container'
         */
         const restart = document.createElement('a')
+        restart.setAttribute('part','restart-button')
         restart.onclick = e => {
             e.preventDefault();
-            this.init();
+            this.initialiseAnimation();
         }
         restart.href = '';
         restart.classList.add('restart-button');
         restart.innerHTML = "restart ↻";
-        this.restartButton = restart;
         this.hide(restart);
+        restart.addEventListener('click',()=>this.hide(restart));
+        this.restartButton = restart;
         this.container.appendChild(restart);
     }
 
@@ -218,17 +364,23 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Generate fast button and adds it hidden to 'this.container'
         */
+        function nullifyDelays(_this) {
+            _this.lines.forEach(line => {
+                line._lineDelay = 0;
+                line._typingDelay = 0;
+            })
+        }
         const fast = document.createElement('a')
+        fast.setAttribute('part','fast-button')
         fast.onclick = (e) => {
             e.preventDefault();
-            this.lineDelay = 0;
-            this.typeDelay = 0;
-            this.startDelay = 0;
+            nullifyDelays(this);
         }
         fast.href = '';
         fast.classList.add('fast-button');
         fast.innerHTML = "fast ❯❯❯";
         this.hide(fast);
+        fast.addEventListener('click',()=>this.hide(fast));
         this.fastButton = fast;
         this.container.appendChild(fast);
     }
@@ -240,88 +392,37 @@ class TerminalAnimation extends HTMLElement {
         this.hideLines();
         this.generateRestartButton();
         this.generateFastButton();
+        this.fixHeight();
     }
 
-    async init() {
-         /**
-         * Start the animation and render the lines
-         */
-        this.hideLines();
-        this.show(this.fastButton);
+    async typeContent() {
         await this.sleep(this.startDelay);
+        this.show(this.fastButton);
         for (let line of this.lines) {
             if (line.tagName.toLowerCase() == 'terminal-line') {
                 // Handle <terminal-line> lines
-                continue;
+                await line.type();
             } else if (line.tagName.toLowerCase() == 'img') {
                 // Handle <img> lines
                 continue;
             }
         }
+        this.resetDelays()
     }
-        //     const lineDelay = line.getAttribute('lineDelay') || this.lineDelay;
-
-        //     if (type == 'input') {
-        //         line.setAttribute('cursor', this.cursor);
-        //         await this.typeAnimation(line);
-        //         await this.sleep(lineDelay);
-        //     }
-
-        //     else if (type == 'progress') {
-        //         await this.progress(line);
-        //         await this.sleep(lineDelay);
-                
-        //     }
-
-        //     else {
-        //         this.container.appendChild(line);
-        //         await this.sleep(lineDelay);
-        //     }
-
-        //     line.removeAttribute('cursor');
-        // }
-        // this.fastElement.style.visibility = 'hidden'
-        // this.lineDelay = this.originalLineDelay
-        // this.typeDelay = this.originalTypeDelay
-        // this.startDelay = this.originalStartDelay
-        // this.addRestart()
+    
+    async initialiseAnimation() {
+         /**
+         * Start the animation and render the lines
+         */
+        this.hideLines();
+        await this.typeContent();
+        this.show(this.restartButton);
+    }
 }
 
 
 
 
-//     /**
-//      * Animate a typed line.
-//      * @param {Node} line - The line element to render.
-//      */
-//     async typeAnimation(line) {
-//         function getAndRemoveAllText(element) {
-//             let textArray = [];
-//             // loop through all the nodes of the element
-//             for (let node of element.childNodes) {
-//                 if (node.nodeType == Node.ELEMENT_NODE && node.hasAttribute("charBeforeInput")) {
-//                     textArray.push("");
-//                     continue;
-//                 }
-//                 textArray.push(node.textContent);
-//                 node.textContent = "";
-//             }
-//             return textArray;
-//         }
-        
-//         const delay = line.getAttribute('typeDelay') || this.typeDelay;
-//         let textArray = getAndRemoveAllText(line);
-//         this.container.appendChild(line);
-//         for (let i=0; i<line.childNodes.length; i++) {
-//             let node = line.childNodes[i];
-//             if (node.nodeType == Node.ELEMENT_NODE && node.hasAttribute("charBeforeInput")) {continue};
-//             let text = textArray[i];
-//             for (let char of text) {
-//                 await this.sleep(delay)
-//                 node.textContent += char;
-//             }
-//         }
-//     }
 
 //     /**
 //      * Animate a progress bar.
@@ -339,21 +440,13 @@ class TerminalAnimation extends HTMLElement {
 //         this.container.appendChild(line);
 
 //         for (let i = 1; i < chars.length + 1; i++) {
-//             await this.sleep(this.typeDelay);
+//             await this.sleep(this.typingDelay);
 //             const percent = Math.round(i / chars.length * 100);
 //             line.textContent = `${chars.slice(0, i)} ${percent}%`;
 // 			if (percent>progressPercent) {
 // 				break;
 // 			}
 //         }
-//     }
-
-//     /**
-//      * Helper function for animation delays, called with `await`.
-//      * @param {number} time - Timeout, in ms.
-//      */
-//     sleep(time) {
-//         return new Promise(resolve => setTimeout(resolve, time));
 //     }
 
 //     insertCharBeforeInput(selector='[data-ty="input"]') {
@@ -390,26 +483,69 @@ class TerminalAnimation extends HTMLElement {
 // // References:
 // // https://github.com/tiangolo/fastapi/blob/master/docs/en/docs/js/termynal.js
 
-const lineTemplate = document.createElement("template");
+
+/* Terminal line */
+const lineTemplate = document.createElement('template');
 lineTemplate.innerHTML = `
     <style>
-
-        slot {
-            line-height: 2;
-            // display: flex;
-            // justify-self: center;
-            // align-self: flex-end;
+        :host {
+            --color-text-prompt: #a2a2a2;
+            --color-text-directory: #A6CE39;
+            --color-text-symlink: #06AEEF;
         }
 
-        // [data]::before {
-        //     /* Set up defaults and ensure empty lines are displayed. */
-        //     content: '';
-        //     display: inline-block;
+        // :host-context(terminal-animation) {
+        //     line-height: 2;
+        //     display: flex;
+        //     justify-self: center;
         // }
 
-        // [data][prompt]::before {
-        //     content: attr(prompt);
-        //     color: var(--color-text-subtle);
+        :host(.hasDirectory) {
+            color: green;
+        }
+        ::slotted(*.hasDirectory) {
+            color: var(--color-text-directory);
+        }
+
+        // .hasCursor::after {
+        //     content: 'CURSOR';
+        //     font-family: monospace;
+        //     -webkit-animation: blink 1s infinite;
+        //             animation: blink 1s infinite;
+        // }
+        
+        // div.hasPS1 {
+        //     white-space: pre;
+        // }
+        
+        // .hasDirectory {
+        //     color: #A6CE39;
+        // }
+        
+        // span.hasInputChar {
+        //     white-space: pre;
+        //     color: #FAA619;
+        // }
+
+        // /* Cursor animation */
+        // @-webkit-keyframes blink {
+        //     50% {
+        //         opacity: 0;
+        //     }
+        // }
+
+        // @keyframes blink {
+        //     50% {
+        //         opacity: 0;
+        //     }
+        // }
+
+        // [data]::before {
+        // }
+
+        // ::slotted([data='prompt']::before) {
+        //     content: 'PROMPTCHAR';
+        //     color: #a2a2a2;
         // }
 
         // [data="input"][directory]::before {
@@ -419,10 +555,12 @@ lineTemplate.innerHTML = `
         
     </style>
     
-    <slot></slot>
+    <body>
+        <slot></slot>
+    </body>
+    
 `
 
-/* Terminal line */
 class TerminalLine extends HTMLElement {
     /**
      * Defining custom attributes for <terminal-line> component
@@ -438,29 +576,256 @@ class TerminalLine extends HTMLElement {
 	//  * @param {number} progressPercent - Max percent of progress in the line, default 100%.
     //  * @param {string} cursor – Character to use for cursor in the line, defaults to ▋.
     //  * @param {string} inputChar – Character(s) to use before the 'input' prompt in the line, defaults to '$'.
+    //  * @param {string} directory – Directory to write in the 'input' prompt before the input character in the line.
     //  * @param {string} promptChar – Character(s) to use before the 'prompt' prompt in the line, defaults to '>>>'.
-    //  * @param {string} directory – If present, directory to write before the input character in the line.
+    //  * @param {string} PS1 – String to write in the 'input' prompt before the actual line. 
+            If present, any 'directory' or 'input' attribute will be disregarded.
+            Accepts HTML format. E.g.: "This is a <span style='color: green;'>valid</span> PS1 attribute"
     //  */
     constructor() {
         super();
         const shadow = this.attachShadow({ mode: "open" });
-        shadow.append(lineTemplate.content.cloneNode(true));
+        shadow.appendChild(lineTemplate.content.cloneNode(true));
+        this.ALLOWED_NODES = ["span"];
         this.container = this.parentElement;
-    
-        this.lineDelayOriginal = this.lineDelay = 
-            parseFloat(this.getAttribute('lineDelay')) || this.container.lineDelay;
-        this.typingDelayOriginal = this.typingDelay = 
-            parseFloat(this.getAttribute('typingDelay')) || this.container.typingDelay;
-        this.progressLength = parseFloat(this.getAttribute('progressLength')) || this.container.progressLength;
-        this.progressChar = this.getAttribute('progressChar')?.toString() || this.container.progressChar;
-        this.progressPercent = parseFloat(this.getAttribute('progressPercent')) || this.container.progressPercent;
-        this.cursor = this.getAttribute('cursor')?.toString() || this.container.cursor;
-        this.inputChar = this.getAttribute('inputChar')?.toString() || this.container.inputChar;
-        this.promptChar = this.getAttribute('promptChar')?.toString() || this.container.promptChar;
-        this.directory = this.getAttribute('directory')?.toString() || this.container.directory;
-        // this.data = this.DATA_TYPES.includes(this.getAttribute('data')) ? this.getAttribute('data') : this.container.data;
-        console.log()
+        this.keepNodes();
     }
+    
+    get data() {
+        /**
+        * Getter for the data property
+        */
+        if (this.hasAttribute('data')) {
+            let attr = this.getAttribute('data');
+            if (this.container.DATA_TYPES.includes(attr)) {
+                return attr;
+            } else {
+                return 'output';
+            }
+        } else {
+            return this.container.data;
+        }
+    }
+    
+    get _lineDelay() {
+        /**
+        * Resets lineDelay property.
+        */
+        if (this.hasAttribute('lineDelay')) {
+            this.lineDelay = parseFloat(this.getAttribute('lineDelay'));
+        } else if (this.container.hasAttribute('lineDelay')) {
+            this.lineDelay = parseFloat(this.container.getAttribute('lineDelay'));
+        } else if (["input","prompt"].includes(this.data)) {
+            this.lineDelay = 600;
+        } else {
+            this.lineDelay = 300;
+        }
+    }
+
+    set _lineDelay(time) {
+        /**
+        * Sets lineDelay property.
+        */
+        this.lineDelay = time;
+    }
+    
+    get _typingDelay() {
+        /**
+        * Resets typingDelay property.
+        */
+        if (this.hasAttribute('typingDelay')) {
+            this.typingDelay = parseFloat(this.getAttribute('typingDelay'));
+        } else if (this.container.hasAttribute('typingDelay')) {
+            this.typingDelay = parseFloat(this.container.getAttribute('typingDelay'));
+        } else {
+            this.typingDelay = 80;
+        }
+    }
+    
+    set _typingDelay(time) {
+        /**
+        * Sets typingDelay property.
+        */
+        this.typingDelay = time;
+    }
+
+    get progressLength() {
+        /**
+        * Getter for the progressLength property
+        */
+        return parseFloat(this.getAttribute('progressLength')) || this.container.progressLength;
+    }
+    
+    get progressChar() {
+        /**
+        * Getter for the progressChar property
+        */
+        return this.getAttribute('progressChar')?.toString() || this.container.progressChar;
+    }
+    
+    get progressPercent() {
+        /**
+        * Getter for the progressPercent property
+        */
+        return parseFloat(this.getAttribute('progressPercent')) || this.container.progressPercent;
+    }
+    
+    get cursor() {
+        /**
+        * Getter for the cursor property
+        */
+        return this.getAttribute('cursor')?.toString() || this.container.cursor;
+    }
+    
+    get inputChar() {
+        /**
+        * Getter for the inputChar property
+        */
+        if (this.hasAttribute('PS1')) {
+            return '';
+        } else {
+            return this.getAttribute('inputChar')?.toString() || this.container.inputChar;
+        }
+    }
+    
+    get promptChar() {
+        /**
+        * Getter for the promptChar property
+        */
+        return this.getAttribute('promptChar')?.toString() || this.container.promptChar;
+    }
+    
+    get directory() {
+        /**
+        * Getter for the directory property
+        */
+        if (this.hasAttribute('PS1')) {
+            return '';
+        } else {
+            return this.getAttribute('directory')?.toString() || this.container.directory;
+        }
+    }
+
+    get PS1() {
+        /**
+        * Getter for the PS1 property
+        */
+        if (this.hasAttribute('PS1')) {
+            return this.getAttribute('PS1');
+        } else if (this.hasAttribute('directory') || this.hasAttribute('inputChar')) {
+            return `<span class="hasDirectory">${this.directory}</span><span class="hasInputChar">${this.inputChar}&nbsp;</span>`;
+        } else {
+            return this.container.PS1;
+        }
+    }
+
+    keepNodes(elementList=this.ALLOWED_NODES) {
+        /*
+        * Delete all line nodes whose tags are not within the elementList
+        * and create the nodes property with the kept ones.
+        */
+        for (let i=0; i<this.childNodes.length; i++) {
+            let node = this.childNodes[i];
+            if (node.nodeType != 3 && !elementList.includes(node.tagName.toLowerCase())) {
+                node.remove();
+                i--;
+            }
+        }
+        this.nodes = Array.from(this.childNodes);
+    }
+    
+    hide(element=this) {
+        /**
+        * Change element's style to 'hidden'
+        */
+        element.style.visibility = 'hidden';
+    }
+    
+    show(element=this) {
+        /**
+        * Change element's style to 'visible'
+        */
+        element.style.visibility = 'visible';
+    }
+
+    sleep(time) {
+        /**
+        * Sleep for an amount of time
+        */
+        return new Promise(resolve => setTimeout(resolve, time));
+    }
+
+    async type() {
+        /**
+        * Function that handles the animation of the current line based on its data property
+        */
+
+        if (this.data == 'input') {
+            // await this.insertPS1();
+            await this.addCursor();
+            // this._lineDelay;
+            await this.sleep(this.lineDelay);
+            await this.typeInput();
+        } else if (this.data == 'progress') {
+            // await this.progress(line);
+            // await this.sleep(lineDelay);
+            return;
+        } else if (this.data == 'prompt') {
+            // await this.promptChar();
+            await this.addCursor();
+            await this.sleep(this.lineDelay);
+            await this.typeInput();
+        } else {
+            await this.sleep(this.lineDelay);
+            this.show()
+        }
+        this.removeCursor();
+    }
+
+    async typeInput() {
+         /**
+         * Animate an input line.
+         */
+        let textArray = this.getAndRemoveTextContent();
+        this.show(); 
+        for (let i=0; i<this.nodes.length; i++) {
+            let node = this.nodes[i];
+            let text = textArray[i];
+            for (let char of text) {
+                console.log(this.lineDelay,this.typingDelay)
+                // this._typingDelay;
+                await this.sleep(this.typingDelay);
+                node.textContent += char;
+            }
+        }
+    }
+
+    getAndRemoveTextContent() {
+        let textArray = [];
+        for (let node of this.nodes) {
+            textArray.push(node.textContent);
+            node.textContent = "";
+        }
+        return textArray;
+    }
+
+    async addCursor() {
+        this.classList.add('hasCursor');
+    }
+    
+    async removeCursor() {
+        this.classList.remove('hasCursor');
+    }
+
+    async insertPS1() {
+        // Add a little delay
+        await this.sleep(15)
+        let ps1 = document.createElement('div');
+        ps1.innerHTML = this.PS1;
+        ps1.classList.add('hasPS1');
+        this.show(ps1)
+        this.insertBefore(ps1,this.firstChild)
+    };
 }
 
 customElements.define("terminal-animation", TerminalAnimation)
