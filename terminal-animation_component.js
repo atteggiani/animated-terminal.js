@@ -44,15 +44,29 @@
 const terminalTemplate = document.createElement('template');
 terminalTemplate.innerHTML = `
     <style>
+        /* Colors inkected by 'applyMode' method 
         :host {
             --color-bg: #252a33;
             --color-text: #eee;
             --color-control-buttons: #FAA619;
             --color-control-buttons-hover: #115D97;
+            --color-scrollbar: rgba(255, 255, 255, .6);
+        }
+        */
+       
+        ::-webkit-scrollbar {
+            width: 14px;
+        }
+        
+        ::-webkit-scrollbar-thumb {
+            border-radius: 20px;
+            border: 4px solid rgba(0,0,0,0);
+            background-clip: padding-box;
+            background-color: var(--color-scrollbar);
         }
 
-        div.terminal-container {
-            max-width: 100%;
+        .terminal-container {
+            max-height: 500px;
             margin: 20px 20px 20px 20px;
             background-color: var(--color-bg);
             color: var(--color-text);
@@ -65,11 +79,12 @@ terminalTemplate.innerHTML = `
             border-radius: 4px;
             padding: 35px 25px 20px;
             position: relative;
+            overflow-y: auto;
             -webkit-box-sizing: border-box;
                     box-sizing: border-box;
         }
 
-        div.terminal-container::before {
+        .terminal-container::before {
             content: '';
             position: absolute;
             top: 12px;
@@ -143,8 +158,9 @@ class TerminalAnimation extends HTMLElement {
     */
     constructor() {
         super();
-        const shadow = this.attachShadow({ mode: "open" });
-        shadow.appendChild(terminalTemplate.content.cloneNode(true));
+        this.attachShadow({ mode: "open" });
+        this.shadowRoot.appendChild(terminalTemplate.content.cloneNode(true));
+        this.applyMode();
         this.DATA_TYPES = ['input','prompt','progress','output'];
         const container = this.shadowRoot.querySelector(".terminal-container");
         if (this.hasAttribute('lineDelay')) {
@@ -155,11 +171,12 @@ class TerminalAnimation extends HTMLElement {
         }
         this.container = container;
         this.keepLines();
-        this.resetDelays();
         if (!this.static) {
             this.setTerminal();
             if (this.init) {
                 this.initialiseAnimation();
+            } else {
+                this.initialiseWhenVisible();
             }
         }
     }
@@ -287,6 +304,30 @@ class TerminalAnimation extends HTMLElement {
         }
     }
 
+    applyMode() {
+        const colors = document.createElement('style');
+        if (this.mode == 'dark') {
+            colors.innerHTML = `
+                    :host {
+                        --color-bg: #252a33;
+                        --color-text: #eee;
+                        --color-control-buttons: #FAA619;
+                        --color-control-buttons-hover: #115D97;
+                        --color-scrollbar: rgba(255, 255, 255, .6);
+            `
+        } else {
+            colors.innerHTML = `
+                :host {
+                    --color-text: #252a33;
+                    --color-bg: #eee;
+                    --color-control-buttons-hover: #FAA619;
+                    --color-control-buttons: #115D97;
+                    --color-scrollbar: rgba(0, 0, 0, .6);
+            `
+        }
+        this.shadowRoot.appendChild(colors);
+    }
+
     keepLines() {
         /*
         * Delete all terminal lines without tags or whose tags are not within the elementList
@@ -403,7 +444,7 @@ class TerminalAnimation extends HTMLElement {
                 continue;
             }
         }
-        this.resetDelays()
+        this.resetDelays();
     }
     
     hidePS1AndPromptChar() {
@@ -425,6 +466,21 @@ class TerminalAnimation extends HTMLElement {
         this.hideLines();
         await this.typeContent();
         this.show(this.restartButton);
+    }
+
+    initialiseWhenVisible() {
+        const observer = new IntersectionObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    this.initialiseAnimation();
+                    observer.unobserve(this);
+                }
+            })
+        },
+        {
+            rootMargin: "-50px",
+        })
+        observer.observe(this);
     }
 }
 
@@ -456,41 +512,6 @@ class TerminalAnimation extends HTMLElement {
 // 			}
 //         }
 //     }
-
-//     insertCharBeforeInput(selector='[data-ty="input"]') {
-//         this.container.querySelectorAll(selector).forEach(node => {
-//             node.insertAdjacentHTML("afterbegin",`<span charBeforeInput>${this.charBeforeInput} </span>`)
-//         })
-//     }
-// }
-
-// function startVisibleTerminals(termynals) {
-//     const observer = new IntersectionObserver(entries => {
-//         entries.forEach(entry => {
-//             const visibleTermynal = termynals.find( termynal => {
-//                 return termynal.container === entry.target
-//             })
-//             if (entry.isIntersecting) {
-//                 visibleTermynal.init();
-//                 observer.unobserve(entry.target);
-//             }
-//         })
-//     },
-//     {
-//         rootMargin: "-50px",
-//     })
-//     termynals.forEach(termynal => observer.observe(termynal.container));
-// }
-
-// function main() {
-//     const terms=createNotInitialisedTermynals();
-//     startVisibleTerminals(terms);
-// }
-
-// main()
-// // References:
-// // https://github.com/tiangolo/fastapi/blob/master/docs/en/docs/js/termynal.js
-
 
 /* Terminal line */
 const lineTemplate = document.createElement('template');
@@ -574,6 +595,7 @@ class TerminalLine extends HTMLElement {
         this.line = this.shadowRoot.querySelector(".terminal-line");
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
+        this.resetDelays();
     }
     
     get data() {
@@ -634,6 +656,11 @@ class TerminalLine extends HTMLElement {
         this.typingDelay = time;
     }
 
+    resetDelays() {
+        this._lineDelay;
+        this._typingDelay;
+    } 
+    
     get progressLength() {
         /**
         * Getter for the progressLength property
@@ -788,7 +815,6 @@ class TerminalLine extends HTMLElement {
             let node = this.nodes[i];
             let text = textArray[i];
             for (let char of text) {
-                console.log(this.lineDelay,this.typingDelay)
                 // this._typingDelay;
                 await this.sleep(this.typingDelay);
                 node.textContent += char;
