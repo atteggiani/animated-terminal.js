@@ -53,12 +53,12 @@ terminalTemplate.innerHTML = `
             --color-scrollbar: rgba(255, 255, 255, .6);
         }
         */
-       
-        ::-webkit-scrollbar {
+
+        .terminal-container::-webkit-scrollbar {
             width: 14px;
         }
         
-        ::-webkit-scrollbar-thumb {
+        .terminal-container::-webkit-scrollbar-thumb {
             border-radius: 20px;
             border: 4px solid rgba(0,0,0,0);
             background-clip: padding-box;
@@ -66,6 +66,7 @@ terminalTemplate.innerHTML = `
         }
 
         .terminal-container {
+            scrollbar-gutter: stable;
             max-height: 500px;
             margin: 20px 20px 20px 20px;
             background-color: var(--color-bg);
@@ -113,10 +114,12 @@ terminalTemplate.innerHTML = `
         }
             
         .restart-button {
-            position: absolute;
             text-decoration: none;
-            bottom: 7px;
-            right: 7px;
+            position: sticky;
+            align-self: flex-end;
+            justify-self: center;
+            bottom: 0;
+            margin-right: -20px;
             color: var(--color-control-buttons);
         }
         
@@ -179,6 +182,7 @@ class TerminalAnimation extends HTMLElement {
                 this.initialiseWhenVisible();
             }
         }
+        // this.container.addEventListener('scroll', )
     }
 
     get mode() {
@@ -444,6 +448,7 @@ class TerminalAnimation extends HTMLElement {
                 continue;
             }
         }
+        this.hide(this.fastButton);
         this.resetDelays();
     }
     
