@@ -9,69 +9,48 @@
         <script src="terminal-animation_component.js" defer></script>
     </head>
     <style>
-        div {
-            height: 700px;
-        }
+        /* ::part(terminal-container) {
+            max-height: 150px;
+        } */
     </style>
     <body>
-        <div></div>
-        <terminal-animation>
-            <terminal-line>Ciao</terminal-line>
+        <!-- <terminal-animation>
+            <terminal-line data="input">Ciao</terminal-line>
             <terminal-line>mammina <span>cara!</span></terminal-line>
             <terminal-line>Guarda come <div>this shouldn't be here</div></terminal-line>
             <terminal-line>mi diverto!</terminal-line>
-        </terminal-animation>
+        </terminal-animation> -->
         <terminal-animation lineDelay="1000" mode="dark">
             <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" lineDelay="50">input with <span style="color: orangered;">red span!</span></terminal-line>
+            <terminal-line data="input" lineDelay="50">input with <span style="background-color: orangered;">red span!</span></terminal-line>
             <terminal-line data="input" PS1="$$$ ">Input with different PS1!</span></terminal-line>
             <terminal-line data="prompt">This is a <span style="color: blue;">prompt!</span></terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory is a very long line to test This has directory is a very long line to test This has directory is a very long line to test This has directory is a very long line to test</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory is a very long line to test This has directory is a very long line to test This has directory is a very long line to test This has directory is a very long line to test</terminal-line>
-            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory</terminal-line>
+            <!-- <terminal-line data="input" directory="~/bubbi" lineDelay="500">This has directory is a very long line to test This has directory is a very long line to test This has directory is a very long line to test This has directory is a very long line to test</terminal-line> -->
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 1</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 2</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 3</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 4</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 5</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 6</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 7</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 8</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 9</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 10</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 11</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 12</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 13</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 14</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 15</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 6</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 7</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 8</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 9</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 10</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 11</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 12</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 13</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 14</terminal-line>
+            <terminal-line data="input" directory="~/bubbi" lineDelay="500">This the number 15</terminal-line>
         </terminal-animation>
     </body>
 </html>
