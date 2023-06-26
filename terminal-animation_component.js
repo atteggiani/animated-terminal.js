@@ -39,6 +39,7 @@
  * - Directory -> ::part(directory)
  * - Input Character(s) -> ::part(input-character)
  * - Prompt Character(s) -> ::part(prompt-character)
+ * - 
 */
 'use strict';
 
@@ -149,7 +150,6 @@ class TerminalAnimation extends HTMLElement {
     * @param {number || string} startDelay - Delay before the start of terminal animation, in ms.
     * @param {number || string} lineDelay - Delay before the start of each terminal line animation, in ms.
     * @param {number || string} typingDelay - Delay between each typed character in the terminal, in ms.
-    * @param {number || string} progressLength - Number of characters displayed as progress bar for the entire terminal.
     * @param {string} progressChar – Character(s) to use for progress bar for the entire terminal, defaults to █.
     * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
     * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
@@ -178,6 +178,8 @@ class TerminalAnimation extends HTMLElement {
             } else {
                 this.initialiseWhenVisible();
             }
+        } else {
+            this.generateAllProgress();
         }
     }
 
@@ -220,13 +222,6 @@ class TerminalAnimation extends HTMLElement {
         * Resets startDelay property.
         */
        return parseFloat(this.getAttribute('startDelay')) || 300;
-    }
-    
-    get progressLength() {
-        /**
-        * Getter for the progressLength property
-        */
-        return parseFloat(this.getAttribute('progressLength')) || 40;
     }
     
     get progressChar() {
@@ -358,6 +353,15 @@ class TerminalAnimation extends HTMLElement {
             }
         }
         this.lines = this.childNodes;
+    }
+
+    async generateAllProgress() {
+        await this.sleep(0.000000000001) // Wait for lines to load
+        this.lines.forEach(async line => {
+            if (line.data == 'progress') {
+                line.generateProgress();
+            }
+        })
     }
 
     hide(element) {
@@ -529,7 +533,7 @@ class TerminalAnimation extends HTMLElement {
     }
     
     scrollOneLine(line) {
-        const nPix = parseFloat(getComputedStyle(line).height.slice(0,-2));
+        const nPix = parseInt(getComputedStyle(line).height);
         this.container.scrollBy(0,nPix);
     }
 
@@ -547,7 +551,7 @@ class TerminalAnimation extends HTMLElement {
             }
         }
         
-        let margin = `${parseFloat(getComputedStyle(this.container).marginBottom.slice(0,-2)) - 5}px` // Margin of the intersectionObserver computed as bottom margin - 5px (5px padding)
+        let margin = `${parseInt(getComputedStyle(this.container).marginBottom) - 5}px` // Margin of the intersectionObserver computed as bottom margin - 5px (5px padding)
         let intersectionObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
                 intersectionFunction(entry)
@@ -597,34 +601,15 @@ class TerminalAnimation extends HTMLElement {
     }
 }
 
-
-
-
-
-//     /**
-//      * Animate a progress bar.
-//      * @param {Node} line - The line element to render.
-//      */
-//     async progress(line) {
-//         const progressLength = line.getAttribute('progressLength')
-//             || this.progressLength;
-//         const progressChar = line.getAttribute('progressChar')
-//             || this.progressChar;
-//         const chars = progressChar.repeat(progressLength);
-// 		const progressPercent = line.getAttribute('progressPercent')
-// 			|| this.progressPercent;
-//         line.textContent = '';
-//         this.container.appendChild(line);
-
-//         for (let i = 1; i < chars.length + 1; i++) {
-//             await this.sleep(this.typingDelay);
-//             const percent = Math.round(i / chars.length * 100);
-//             line.textContent = `${chars.slice(0, i)} ${percent}%`;
-// 			if (percent>progressPercent) {
-// 				break;
-// 			}
-//         }
-//     }
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
+// ============================================================================================================= //
 
 /* Terminal line */
 const lineTemplate = document.createElement('template');
@@ -635,29 +620,24 @@ lineTemplate.innerHTML = `
             --color-text-directory: #A6CE39;
             --color-text-symlink: #06AEEF;
             --color-text-inputchar: #FAA619;
-        }
-
-        div.terminal-line {
-            line-height: 2;
-            display: inline;
-            justify-self: center;
-        }
-
-        span.directory {
-            color: var(--color-text-directory);
+            display: grid;
         }
         
-        span.inputChar {
-            color: var(--color-text-inputchar);
+        div.terminal-line {
+            min-height: 2em;
+            line-height: 2;
+            display: inline;
+            align-self: center;
         }
-         /*
-        ::slotted(span::after) {
+        
+        .cursor::after {
             content: '_';
+            white-space: pre;
             font-family: monospace;
             -webkit-animation: blink 1s infinite;
                     animation: blink 1s infinite;
         }
-
+        
         @-webkit-keyframes blink {
             50% {
                 opacity: 0;
@@ -668,7 +648,15 @@ lineTemplate.innerHTML = `
             50% {
                 opacity: 0;
             }
-        } */
+        }
+
+        span.directory {
+            color: var(--color-text-directory);
+        }
+        
+        span.inputChar {
+            color: var(--color-text-inputchar);
+        }
     </style>
     
     <body>
@@ -687,7 +675,6 @@ class TerminalLine extends HTMLElement {
     //  *   - 'progress' Line with progress bar animation.
     //  * @param {number} lineDelay - Delay before the start of the line animation, in ms.
     //  * @param {number} typingDelay - Delay between each typed character in the line, in ms.
-    //  * @param {number} progressLength - Number of characters displayed as progress bar in the line.
     //  * @param {string} progressChar – Character to use for progress bar in the line, defaults to █.
 	//  * @param {number} progressPercent - Max percent of progress in the line, default 100%.
     //  * @param {string} cursor – Character to use for cursor in the line, defaults to ▋.
@@ -779,13 +766,6 @@ class TerminalLine extends HTMLElement {
         this._lineDelay;
         this._typingDelay;
     } 
-    
-    get progressLength() {
-        /**
-        * Getter for the progressLength property
-        */
-        return parseFloat(this.getAttribute('progressLength')) || this.container.progressLength;
-    }
     
     get progressChar() {
         /**
@@ -909,20 +889,50 @@ class TerminalLine extends HTMLElement {
             await this.addCursor();
             await this.typeInput();
         } else if (this.data == 'progress') {
-            // await this.progress(line);
-            // await this.sleep(lineDelay);
+            await this.sleep(this.lineDelay);
+            await this.typeProgress();
             return;
         } else if (this.data == 'prompt') {
-            let delay = this.sleep(this.lineDelay);
             await this.showPromptChar();
             await this.addCursor();
-            await delay;
+            await this.sleep(this.lineDelay);
             await this.typeInput();
         } else {
             await this.sleep(this.lineDelay);
             this.show()
         }
-        // await this.container.autoScroll(this);
+    }
+
+    measureChar(char=this.progressChar) {
+        const ruler = document.createElement('span');
+        ruler.innerHTML = char;
+        ruler.style.whiteSpace = 'pre';
+        this.appendChild(ruler);
+        const width = ruler.offsetWidth;
+        this.removeChild(ruler);
+        return width;
+    }
+
+    async typeProgress() {
+        /**
+        * Animate a progress bar.
+        */
+        const progressCharWidth = this.measureChar();
+        const progressSteps = Math.round((parseInt(getComputedStyle(this).width)*0.8*(this.progressPercent/100))/progressCharWidth);
+        let percent = 0;
+        this.textContent = '0%';
+        this.show();
+        for (let i=1; i<=progressSteps; i++) {
+            await this.sleep(this.typingDelay);
+            percent = Math.round(this.progressPercent/progressSteps*i)
+            this.textContent = `${this.progressChar.repeat(i)} ${percent}%`;
+        }
+    }
+
+    generateProgress() {
+        const progressCharWidth = this.measureChar();
+        const progressLength = Math.round((parseInt(getComputedStyle(this).width)*0.8*(this.progressPercent/100))/progressCharWidth);
+        this.textContent = `${this.progressChar.repeat(progressLength)} ${this.progressPercent}%`;
     }
 
     async typeInput() {
@@ -951,7 +961,7 @@ class TerminalLine extends HTMLElement {
     }
 
     async addCursor() {
-        this.nodes.forEach(node => node.classList.add('cursor'));
+        this.line.classList.add('cursor');
     }
 
     async insertPromptChar() {
