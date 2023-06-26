@@ -630,26 +630,6 @@ lineTemplate.innerHTML = `
             align-self: center;
         }
         
-        .cursor::after {
-            content: '_';
-            white-space: pre;
-            font-family: monospace;
-            -webkit-animation: blink 1s infinite;
-                    animation: blink 1s infinite;
-        }
-        
-        @-webkit-keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
-
-        @keyframes blink {
-            50% {
-                opacity: 0;
-            }
-        }
-
         span.directory {
             color: var(--color-text-directory);
         }
@@ -660,7 +640,7 @@ lineTemplate.innerHTML = `
     </style>
     
     <body>
-        <div class='terminal-line'><slot></slot><div>
+        <div class='terminal-line'><slot></slot></div>
     </body>
     
 `
@@ -691,6 +671,7 @@ class TerminalLine extends HTMLElement {
         shadow.appendChild(lineTemplate.content.cloneNode(true));
         this.ALLOWED_NODES = ["span"];
         this.line = this.shadowRoot.querySelector(".terminal-line");
+        this.setCursorChar();
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
         this.resetDelays();
@@ -830,6 +811,31 @@ class TerminalLine extends HTMLElement {
         }
     }
     
+    setCursorChar() {
+        const style = document.createElement('style');
+        style.innerHTML=`
+            .cursor::after {
+                content: '${this.cursor}';
+                font-family: monospace;
+                -webkit-animation: blink 1s infinite;
+                        animation: blink 1s infinite;
+            }
+            
+            @-webkit-keyframes blink {
+                50% {
+                    opacity: 0;
+                }
+            }
+    
+            @keyframes blink {
+                50% {
+                    opacity: 0;
+                }
+            }
+        `
+        this.shadowRoot.appendChild(style);
+    }
+
     keepNodes(elementList=this.ALLOWED_NODES) {
         /*
         * Delete all line nodes whose tags are not within the elementList, 
@@ -885,8 +891,6 @@ class TerminalLine extends HTMLElement {
         */
         if (this.data == 'input') {
             await this.showPS1();
-            await this.sleep(this.lineDelay);
-            await this.addCursor();
             await this.typeInput();
         } else if (this.data == 'progress') {
             await this.sleep(this.lineDelay);
@@ -894,13 +898,12 @@ class TerminalLine extends HTMLElement {
             return;
         } else if (this.data == 'prompt') {
             await this.showPromptChar();
-            await this.addCursor();
-            await this.sleep(this.lineDelay);
             await this.typeInput();
         } else {
             await this.sleep(this.lineDelay);
             this.show()
         }
+
     }
 
     measureChar(char=this.progressChar) {
@@ -941,6 +944,8 @@ class TerminalLine extends HTMLElement {
          */
         let textArray = this.getAndRemoveTextContent();
         this.show();
+        await this.addCursor();
+        await this.sleep(this.lineDelay);
         for (let i=0; i<this.nodes.length; i++) {
             let node = this.nodes[i];
             let text = textArray[i];
@@ -949,6 +954,7 @@ class TerminalLine extends HTMLElement {
                 node.textContent += char;
             }
         }
+        await this.removeCursor();
     }
 
     getAndRemoveTextContent() {
@@ -962,6 +968,10 @@ class TerminalLine extends HTMLElement {
 
     async addCursor() {
         this.line.classList.add('cursor');
+    }
+    
+    async removeCursor() {
+        this.line.classList.remove('cursor');
     }
 
     async insertPromptChar() {
