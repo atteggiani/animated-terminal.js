@@ -9,22 +9,48 @@
         <script src="terminal-animation_component.js" defer></script>
     </head>
     <style>
-        /* ::part(terminal-container) {
-            max-height: 150px;
-        } */
+        
+        /* ::part(restart-button) {
+            top: unset;
+            bottom: 0px; 
+        }*/
+        .bubbi {
+            /* position: sticky;
+            bottom: 0;
+            top: -10; */
+        }
+
     </style>
     <body>
-        <terminal-animation lineDelay="1000">
-            <terminal-line data="input" directory="~/bubbi" lineDelay="5000">This has directory</terminal-line>
-            <terminal-line data="input">input with <span style="background-color: orangered;">red span!</span></terminal-line>
-            <terminal-line data="input" PS1="">Bubbi</terminal-line>
-            <terminal-line data="input"></terminal-line>
-            <terminal-line data="input" PS1=""></terminal-line>
-            <terminal-line data="input" PS1="$$$ ">Input with different PS1!</span></terminal-line>
-            <terminal-line data="prompt">This is a <span style="color: blue;">prompt!</span></terminal-line>
-            <terminal-line directory="~/bubbi" lineDelay="500">This the number 1</terminal-line>
-            <terminal-line directory="~/bubbi" lineDelay="500">This the number 2</terminal-line>
-            <terminal-line directory="~/bubbi" lineDelay="500">This the number 3</terminal-line>
+        <terminal-animation inputChar="&#127759;">
+            <terminal-line data="input" directory="&gt;&#127759;">this is an input line</terminal-line>
+            <terminal-line data="input" directory="test &#127759;">this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <img class="bubbi" src="Rose GUI.png">
         </terminal-animation>
     </body>
 </html>

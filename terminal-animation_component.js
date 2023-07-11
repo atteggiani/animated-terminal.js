@@ -8,9 +8,9 @@
  * The usage is as follow:
  * 
  * <terminal-animation>
- *      <terminal-line type="input">First input line</terminal-line>
- *      <terminal-line type="input">Second input line</terminal-line>
- *      <terminal-line type="input">Third <span>input with span</span></terminal-line>
+ *      <terminal-line data="input">First input line</terminal-line>
+ *      <terminal-line data="input">Second input line</terminal-line>
+ *      <terminal-line data="input">Third input with <span style="color: red"> red span</span></terminal-line>
  *      <terminal-line>First output line</terminal-line>
  * </terminal-animation>
  * 
@@ -39,22 +39,25 @@
  * - Directory -> ::part(directory)
  * - Input Character(s) -> ::part(input-character)
  * - Prompt Character(s) -> ::part(prompt-character)
- * - 
 */
 'use strict';
+
+function replaceTagSymbols(str) {
+    /**
+    * Replace HTML tag symbols '<' and '>' with HTML enities '&lt;' and '&gt;'
+    * for correct usage in directories, PS1, input/promp characters etc.
+    */ 
+    return str?.replace('<','&lt;').replace('>','&gt;')
+}
 
 const terminalTemplate = document.createElement('template');
 terminalTemplate.innerHTML = `
     <style>
-        /* Colors inkected by 'applyMode' method 
+        /* Colors injected by 'applyMode' method */
+
         :host {
-            --color-bg: #252a33;
-            --color-text: #eee;
-            --color-control-buttons: #FAA619;
-            --color-control-buttons-hover: #115D97;
-            --color-scrollbar: rgba(255, 255, 255, .6);
+            position: relative;
         }
-        */
 
         .terminal-container::-webkit-scrollbar {
             width: 14px;
@@ -68,10 +71,13 @@ terminalTemplate.innerHTML = `
         }
 
         .terminal-container {
+            word-break: break-all;
             scroll-behavior: smooth;
             scrollbar-gutter: stable;
+            max-swidth: 100%;
             max-height: 510px;
-            margin: 20px 20px 20px 20px;
+            margin-top: 15px;
+            margin-bottom: 15px;
             background-color: var(--color-bg);
             color: var(--color-text);
             display: flex;
@@ -81,9 +87,10 @@ terminalTemplate.innerHTML = `
             font-family: 'Roboto Mono', 'Fira Mono', Consolas, Menlo, Monaco, 'Courier New', Courier, monospace;
             font-weight: bold;
             border-radius: 4px;
-            padding: 35px 25px 20px;
+            padding: 30px 25px 10px;
             position: relative;
             overflow-y: auto;
+            overflow-x: hidden;
             -webkit-box-sizing: border-box;
                     box-sizing: border-box;
         }
@@ -105,31 +112,49 @@ terminalTemplate.innerHTML = `
         }
         
         .fast-button {
-            position: absolute;
             text-decoration: none;
-            top: 15px;
-            right: 7px;
+            position: sticky;
+            align-self: flex-end;
+            justify-self: center;
+            top: 0;
+            margin-top: -5px;
+            margin-right: -20px;
             color: var(--color-control-buttons);
         }
         
         .fast-button:hover {
             color: var(--color-control-buttons-hover);
         }
-            
+        
         .restart-button {
-            text-decoration: none;
             position: sticky;
+            text-decoration: none;
             align-self: flex-end;
             justify-self: center;
-            bottom: 0;
+            margin-bottom: 0px;
             margin-right: -20px;
             color: var(--color-control-buttons);
+            bottom: 0px;
         }
-        
+
         .restart-button:hover {
             color: var(--color-control-buttons-hover);
         
         }
+        
+        ::slotted(img) {
+            position: sticky;
+            border: solid 2px transparent;
+            -webkit-box-sizing: border-box;
+            border-radius: 8px;
+            z-index: 10;
+        }
+
+        ::slotted(img:hover) {
+            border: solid 2px red;
+            cursor: move;
+        }
+
     </style>
 
     <div class='terminal-container' part="terminal-container" tabindex=-1>
@@ -150,6 +175,7 @@ class TerminalAnimation extends HTMLElement {
     * @param {number || string} startDelay - Delay before the start of terminal animation, in ms.
     * @param {number || string} lineDelay - Delay before the start of each terminal line animation, in ms.
     * @param {number || string} typingDelay - Delay between each typed character in the terminal, in ms.
+    * @param {number || string} imageDelay - Amount of time for an image to stay opened before being iconified, in ms.
     * @param {string} progressChar – Character(s) to use for progress bar for the entire terminal, defaults to █.
     * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
     * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
@@ -169,27 +195,27 @@ class TerminalAnimation extends HTMLElement {
         this.applyMode();
         this.DATA_TYPES = ['input','prompt','progress','output'];
         this.keepLines();
-        this.generateObservers();
-        this.autoScroll();
-        if (!this.static) {
-            this.setTerminal();
-            if (this.init) {
-                this.initialiseAnimation();
+        window.onload = () => { 
+            if (!this.static) {
+                this.setTerminal();
+                if (this.init) {
+                    this.initialiseAnimation();
+                } else {
+                    this.initialiseWhenVisible();
+                }
             } else {
-                this.initialiseWhenVisible();
+                this.generateAllProgress();
+                this.setImg();
             }
-        } else {
-            this.generateAllProgress();
         }
     }
-
+    
     get container() {
         const container = this.shadowRoot.querySelector(".terminal-container");
-        if (this.hasAttribute('lineDelay')) {
-            container.setAttribute('lineDelay',parseFloat(this.getAttribute('lineDelay')))
-        }
-        if (this.hasAttribute('typingDelay')) {
-            container.setAttribute('typingDelay',parseFloat(this.getAttribute('typingDelay')))
+        for (let attr of ['lineDelay','typingDelay','imageDelay']) {
+            if (this.hasAttribute(attr)) {
+                container.setAttribute(attr,parseFloat(this.getAttribute(attr)))
+            }    
         }
         return container
     }
@@ -224,11 +250,32 @@ class TerminalAnimation extends HTMLElement {
        return parseFloat(this.getAttribute('startDelay')) || 300;
     }
     
+    get _imageDelay() {
+        /**
+        * Resets lineDelay property.
+        */
+        const img = (Array.from(this.lines).filter(line => line.tagName?.toLowerCase() == 'img'));
+        if (img.length && img[0].hasAttribute('imageDelay')) {
+            this.imageDelay = parseFloat(img[0].getAttribute('imageDelay'));
+        } else if (this.hasAttribute('imageDelay')) {
+            this.imageDelay = parseFloat(this.getAttribute('imageDelay'));
+        } else {
+            this.imageDelay = 3000;
+        }
+    }
+
+    set _imageDelay(time) {
+        /**
+        * Sets lineDelay property.
+        */
+        this.imageDelay = time;
+    }
+
     get progressChar() {
         /**
         * Getter for the progressChar property
         */
-        return this.getAttribute('progressChar')?.toString() || '█';
+        return replaceTagSymbols(this.getAttribute('progressChar')?.toString()) || '█';
     }
     
     get progressPercent() {
@@ -242,7 +289,7 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Getter for the cursor property
         */
-        return this.getAttribute('cursor')?.toString() || '▋';
+        return replaceTagSymbols(this.getAttribute('cursor')?.toString()) || '▋';
     }
     
     get inputChar() {
@@ -252,7 +299,7 @@ class TerminalAnimation extends HTMLElement {
         if (this.hasAttribute('PS1')) {
             return '';
         } else {
-            return this.getAttribute('inputChar')?.toString() || '$';
+            return replaceTagSymbols(this.getAttribute('inputChar')?.toString()) || '$';
         }
     }
     
@@ -260,7 +307,7 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Getter for the promptChar property
         */
-        return this.getAttribute('promptChar')?.toString() || '>>>';
+        return replaceTagSymbols(this.getAttribute('promptChar')?.toString()) || '>>>';
     }
     
     get directory() {
@@ -270,7 +317,7 @@ class TerminalAnimation extends HTMLElement {
         if (this.hasAttribute('PS1')) {
             return '';
         } else {
-            return this.getAttribute('directory')?.toString() || '';
+            return replaceTagSymbols(this.getAttribute('directory')?.toString()) || '';
         }
     }
 
@@ -342,12 +389,19 @@ class TerminalAnimation extends HTMLElement {
 
     keepLines() {
         /*
-        * Delete all terminal lines without tags or whose tags are not within the elementList
-        * and create the lines property with the kept ones.
+        * Delete all terminal lines without tags or whose tags are not <terminal-line> or <img>
+        * Also remove any other img tag after another img tag has been used (Only allow one img per terminal)
+        * Create the 'lines' property with the kept lines.
         */
+        let count = 0;
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
-            if (node.tagName?.toLowerCase() != 'terminal-line') {
+            if (node.tagName?.toLowerCase() == 'terminal-line') {
+                continue
+            } else if (node.tagName?.toLowerCase() == 'img' && count == 0) {
+                    count++;
+                    continue
+            } else {
                 node.remove();
                 i--;
             }
@@ -356,8 +410,8 @@ class TerminalAnimation extends HTMLElement {
     }
 
     async generateAllProgress() {
-        await this.sleep(0.000000000001) // Wait for lines to load
-        this.lines.forEach(async line => {
+        // await this.sleep(0.000000000001) // Wait for lines to load
+        this.lines.forEach(line => {
             if (line.data == 'progress') {
                 line.generateProgress();
             }
@@ -390,6 +444,7 @@ class TerminalAnimation extends HTMLElement {
             line._lineDelay;
             line._typingDelay;
         })
+        this._imageDelay;
     }
 
     hideLines() {
@@ -407,9 +462,9 @@ class TerminalAnimation extends HTMLElement {
         restart.setAttribute('part','restart-button')
         restart.onclick = async e => {
             e.preventDefault();
-            this.hidePS1AndPromptChar();
-            this.scrollToTop();
-            this.autoScroll(this.mutationObserver);
+            this.hideAll();
+            this.mutationObserver.disconnect();
+            await this.scrollToTop();
             this.initialiseAnimation();
         }
         restart.href = '';
@@ -430,6 +485,7 @@ class TerminalAnimation extends HTMLElement {
                 line._lineDelay = 0;
                 line._typingDelay = 0;
             })
+            _this._imageDelay = 0;
         }
         const fast = document.createElement('a')
         fast.setAttribute('part','fast-button')
@@ -444,7 +500,7 @@ class TerminalAnimation extends HTMLElement {
         fast.addEventListener('click', e => this.hide(fast));
         this.addFocusOnTerminalContainerOnClick(fast);
         this.fastButton = fast;
-        this.container.appendChild(fast);
+        this.container.prepend(fast);
     }
 
     setTerminal() {
@@ -454,49 +510,74 @@ class TerminalAnimation extends HTMLElement {
         this.hideLines();
         this.generateRestartButton();
         this.generateFastButton();
-    }
-
-    async typeContent() {
-        /**
-        * Function to type the content of the terminal.
-        */
-        await this.sleep(this.startDelay);
-        this.show(this.fastButton);
-        for (let line of this.lines) {
-            if (line.tagName.toLowerCase() == 'terminal-line') {
-                // Handle <terminal-line> lines
-                await line.type();
-            } else if (line.tagName.toLowerCase() == 'img') {
-                // Handle <img> lines
-                continue;
-            }
-        }
-        this.hide(this.fastButton);
+        this.setImg();
+        this.generateObservers();
         this.resetDelays();
     }
-    
+
     hidePS1AndPromptChar() {
         /**
         * Hides PS1 and Prompt Char for terminal reset
         */
         this.lines.forEach(line => {
-            let ps1 = line.shadowRoot.querySelector('.ps1');
-            let prompt = line.shadowRoot.querySelector('.promptChar');
-            if (ps1) {
-                this.hide(ps1);
-            } else if (prompt) {
-                this.hide(prompt);
+            let elem = line.shadowRoot?.querySelector('.ps1, .promptChar');
+            if (elem) {
+                this.hide(elem);
             }
         })
     }
+
+    hideAll() {
+        this.hideLines();
+        this.hidePS1AndPromptChar();
+    }
+
+    setImg() {
+        this.lines.forEach(line => {
+            if (line.tagName.toLowerCase() == 'img') {
+                const style = getComputedStyle(this.container);
+                this.container.style.height = style.maxHeight;
+                const ratio = line.width/line.height;
+                const maxWidth = parseFloat(style.width) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
+                const maxHeight = parseFloat(style.height) - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+                if (line.width > maxWidth) {
+                    line.width = maxWidth;
+                } 
+                if (line.height > maxHeight) {
+                    line.width = maxHeight*ratio;
+                }
+                const padding = 9;
+                line.style.marginLeft = `${padding - line.offsetLeft}px`;
+                line.style.marginTop = `${padding - line.offsetTop}px`;
+                line.style.top = `${padding - parseInt(getComputedStyle(line.parentElement.container).paddingTop)}px`;
+            }
+        })
+    }
+        
 
     async initialiseAnimation() {
          /**
          * Start the animation and render the lines
          */
-        this.hideLines();
-        while (this.container.scrollTop != 0) {await this.sleep(50)} //Start when the container is scroll up to the top.
-        await this.typeContent();
+        // while (this.container.scrollTop != 0) {await this.sleep(50)} //Start when the container is scroll up to the top.
+        this.autoScroll();
+        await this.sleep(this.startDelay);
+        this.show(this.fastButton);
+        for (let line of this.lines) {
+            if (line.tagName.toLowerCase() == 'terminal-line') {
+                line.classList.add('isBeingTyped');
+                // Handle <terminal-line> lines
+                await line.type();
+                line.classList.remove('isBeingTyped');
+            } else if (line.tagName.toLowerCase() == 'img') {
+                // Handle <img> lines
+                this.show(line);
+                // await this.sleep(this.imageDelay);
+                // this.hide(line);
+            }
+        }
+        this.hide(this.fastButton);
+        this.resetDelays();
         this.show(this.restartButton);
     }
 
@@ -519,17 +600,43 @@ class TerminalAnimation extends HTMLElement {
     }
 
     addFocusOnTerminalContainerOnClick(elem) {
-        elem.addEventListener('click',() => this.container.focus())
+        elem.addEventListener('click',() => this.container.focus(), {passive: true})
     }
 
     scrollToTop() {
-        // Scroll to the bottom of the container.
-        this.container.scrollTop = 0;
+    // Scroll to the top of the container.
+        this.container.scrollTop = 0
+        return new Promise(resolve => {
+            const scrollHandler = () => {
+                if (this.container.scrollTop == 0) {
+                    this.container.removeEventListener("scroll", scrollHandler);
+                    resolve();
+                }
+            }
+            if (this.container.scrollTop == 0) {
+                resolve();
+            } else {
+                this.container.addEventListener("scroll", scrollHandler, {passive: true});
+            }
+        });
     }
     
     scrollToBottom() {
-        // Scroll to the bottom of the container.
+    // Scroll to the bottom of the container.
         this.container.scrollTop = this.container.scrollHeight;
+        return new Promise(resolve => {
+            const scrollHandler = () => {
+                if (this.container.scrollTop = this.container.scrollHeight) {
+                    this.container.removeEventListener("scroll", scrollHandler);
+                    resolve();
+                }
+            }
+            if (this.container.scrollTop = this.container.scrollHeight) {
+                resolve();
+            } else {
+                this.container.addEventListener("scroll", scrollHandler, {passive: true});
+            }
+        });
     }
     
     scrollOneLine(line) {
@@ -544,13 +651,11 @@ class TerminalAnimation extends HTMLElement {
             } else {
                 if (entry.target.nextSibling) {
                     this.scrollOneLine(entry.target);
-                } else {
-                    this.scrollToBottom();
                 }
                 intersectionObserver.unobserve(entry.target);
             }
         }
-        
+           
         let margin = `${parseInt(getComputedStyle(this.container).marginBottom) - 5}px` // Margin of the intersectionObserver computed as bottom margin - 5px (5px padding)
         let intersectionObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
@@ -562,15 +667,26 @@ class TerminalAnimation extends HTMLElement {
             rootMargin: `0px 0px ${margin} 0px`,
         })
         
-        const mutationFunction = entry => {
-            if (entry.oldValue?.includes("visibility: hidden")) {
-                intersectionObserver.observe(entry.target)
+        const mutationFunction = async entry => {
+            let nextSibling = entry.target.nextSibling;
+            if (nextSibling) {
+                if (nextSibling.tagName.toLowerCase() == 'terminal-line') {
+                    intersectionObserver.observe(nextSibling)
+                } else if (nextSibling.nextSibling) {
+                    intersectionObserver.observe(nextSibling.nextSibling)
+                } else {
+                    await this.scrollToBottom();    
+                }
+            } else {
+                await this.scrollToBottom();
             }
         }
-        
+
         this.mutationObserver = new MutationObserver(entries => {
             entries.forEach(entry => {
-                mutationFunction(entry)
+                if (entry.oldValue?.includes("isBeingTyped")) {
+                    mutationFunction(entry)
+                }
             })
         })
     }
@@ -579,39 +695,41 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Auto scrolls 1 line if the terminal content exceeds the terminal max-height.
         */
-        
         this.lines.forEach(line => {
-            this.mutationObserver.observe(line,{
-                attributes: true,
-                attributeOldValue: true,
-                attributeFilter: ["style"]
-            })
-
+            if (line.tagName.toLowerCase() == 'terminal-line') {
+                this.mutationObserver.observe(line,{
+                    attributes: true,
+                    attributeOldValue: true,
+                    attributeFilter: ["class"]
+                })
+            }
         });
+
         this.addEventListener('wheel', e => {
-            // intersectionObserver.disconnect();
             this.mutationObserver.disconnect();
-        })
+        }, {passive: true})
+
         this.addEventListener('keydown', e => {
             if (['ArrowDown','Space','ArrowUp'].includes(e.code)) {
-                // intersectionObserver.disconnect();
                 this.mutationObserver.disconnect();
             }
-        })
+        }, {passive: true})
     }
 }
 
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
-// ============================================================================================================= //
+/* =============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ ===============================================================================================================
+ =============================================================================================================== */
 
-/* Terminal line */
+ /* Terminal line */
 const lineTemplate = document.createElement('template');
 lineTemplate.innerHTML = `
     <style>
@@ -712,7 +830,7 @@ class TerminalLine extends HTMLElement {
         } else if (["input","prompt"].includes(this.data)) {
             this.lineDelay = 600;
         } else {
-            this.lineDelay = 300;
+            this.lineDelay = 100;
         }
     }
 
@@ -731,6 +849,8 @@ class TerminalLine extends HTMLElement {
             this.typingDelay = parseFloat(this.getAttribute('typingDelay'));
         } else if (this.container.hasAttribute('typingDelay')) {
             this.typingDelay = parseFloat(this.container.getAttribute('typingDelay'));
+        } else if (["progress"].includes(this.data)) {
+            this.typingDelay = 30;
         } else {
             this.typingDelay = 80;
         }
@@ -742,17 +862,18 @@ class TerminalLine extends HTMLElement {
         */
         this.typingDelay = time;
     }
-
+    
     resetDelays() {
         this._lineDelay;
         this._typingDelay;
+        this.container._imageDelay;
     } 
     
     get progressChar() {
         /**
         * Getter for the progressChar property
         */
-        return this.getAttribute('progressChar')?.toString() || this.container.progressChar;
+        return replaceTagSymbols(this.getAttribute('progressChar')?.toString()) || this.container.progressChar;
     }
     
     get progressPercent() {
@@ -766,7 +887,7 @@ class TerminalLine extends HTMLElement {
         /**
         * Getter for the cursor property
         */
-        return this.getAttribute('cursor')?.toString() || this.container.cursor;
+        return replaceTagSymbols(this.getAttribute('cursor')?.toString()) || this.container.cursor;
     }
     
     get inputChar() {
@@ -776,7 +897,7 @@ class TerminalLine extends HTMLElement {
         if (this.hasAttribute('PS1')) {
             return '';
         } else {
-            return this.getAttribute('inputChar')?.toString() || this.container.inputChar;
+            return replaceTagSymbols(this.getAttribute('inputChar')?.toString()) || this.container.inputChar;
         }
     }
     
@@ -784,7 +905,7 @@ class TerminalLine extends HTMLElement {
         /**
         * Getter for the promptChar property
         */
-        return this.getAttribute('promptChar')?.toString() || this.container.promptChar;
+        return replaceTagSymbols(this.getAttribute('promptChar')?.toString()) || this.container.promptChar;
     }
     
     get directory() {
@@ -794,7 +915,7 @@ class TerminalLine extends HTMLElement {
         if (this.hasAttribute('PS1')) {
             return '';
         } else {
-            return this.getAttribute('directory')?.toString() || this.container.directory;
+            return replaceTagSymbols(this.getAttribute('directory')?.toString()) || this.container.directory;
         }
     }
 
@@ -810,7 +931,7 @@ class TerminalLine extends HTMLElement {
             return this.container.PS1;
         }
     }
-    
+
     setCursorChar() {
         const style = document.createElement('style');
         style.innerHTML=`
@@ -877,11 +998,11 @@ class TerminalLine extends HTMLElement {
         return new Promise(resolve => setTimeout(resolve, time));
     }
 
-    async showPS1() {
+    showPS1() {
         this.show(this.shadowRoot.querySelector('.ps1'));
     }
     
-    async showPromptChar() {
+    showPromptChar() {
         this.show(this.shadowRoot.querySelector('.promptChar'));
     }
 
@@ -890,14 +1011,14 @@ class TerminalLine extends HTMLElement {
         * Function that handles the animation of the current line based on its data property
         */
         if (this.data == 'input') {
-            await this.showPS1();
+            this.showPS1();
             await this.typeInput();
         } else if (this.data == 'progress') {
             await this.sleep(this.lineDelay);
             await this.typeProgress();
             return;
         } else if (this.data == 'prompt') {
-            await this.showPromptChar();
+            this.showPromptChar();
             await this.typeInput();
         } else {
             await this.sleep(this.lineDelay);
@@ -944,7 +1065,7 @@ class TerminalLine extends HTMLElement {
          */
         let textArray = this.getAndRemoveTextContent();
         this.show();
-        await this.addCursor();
+        this.addCursor();
         await this.sleep(this.lineDelay);
         for (let i=0; i<this.nodes.length; i++) {
             let node = this.nodes[i];
@@ -954,7 +1075,7 @@ class TerminalLine extends HTMLElement {
                 node.textContent += char;
             }
         }
-        await this.removeCursor();
+        this.removeCursor();
     }
 
     getAndRemoveTextContent() {
@@ -966,38 +1087,28 @@ class TerminalLine extends HTMLElement {
         return textArray;
     }
 
-    async addCursor() {
+    addCursor() {
         this.line.classList.add('cursor');
     }
     
-    async removeCursor() {
+    removeCursor() {
         this.line.classList.remove('cursor');
     }
 
-    async insertPromptChar() {
-        if (this.data == 'prompt') {
-            let promptChar = document.createElement('div');
-            promptChar.innerHTML = this.promptChar;
-            promptChar.classList.add('promptChar');
-            this.show(promptChar);
-            this.insertBefore(promptChar,this.firstChild)
-        }
-    }
-
-    async generatePS1AndPromptCharElements() {
+    generatePS1AndPromptCharElements() {
         let elem = document.createElement('div');
         elem.style.display="inline";
         if (this.data == 'input') {
             elem.innerHTML = this.PS1;
             elem.classList.add('ps1');
             this.PS1Element = elem;
-            this.line.insertBefore(elem,this.line.firstChild)
+            this.line.prepend(elem)
         } else if (this.data == 'prompt') {
             elem.innerHTML = `${this.promptChar} `;
             elem.classList.add('promptChar');
             elem.setAttribute('part','prompt-character');
             this.promptCharElement = elem;
-            this.line.insertBefore(elem,this.line.firstChild)
+            this.line.prepend(elem)
         }
         if (!this.parentElement.static) {
             this.hide(elem);
