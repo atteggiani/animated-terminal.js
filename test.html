@@ -9,21 +9,55 @@
         <script src="terminal-animation_component.js" defer></script>
     </head>
     <style>
-        
-        /* ::part(restart-button) {
-            top: unset;
-            bottom: 0px; 
-        }*/
         .bubbi {
-            /* position: sticky;
-            bottom: 0;
-            top: -10; */
+            /* display: inline; */
+        }
+        
+        body {
+            position: relative;
+            overflow: auto;
+            height: 10000px;
+        }
+
+        .parent {
+            position: sticky;
+            top: 50px;
+            background-color: blueviolet;
+        }
+
+        .child {
+            position: absolute;
+            top: 0px;
+            left: 150px;
+            width: 180px;
+            height: 180px;
+            background-color: orangered;
+        }
+
+        .restart-button {
+            color: purple;
         }
 
     </style>
     <body>
-        <terminal-animation inputChar="&#127759;">
-            <terminal-line data="input" directory="&gt;&#127759;">this is an input line</terminal-line>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div class="parent">
+            <div class="child">
+            </div>
+        </div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+
+
+       <terminal-animation>
+            <terminal-line data="input">this is an input line</terminal-line>
             <terminal-line data="input" directory="test &#127759;">this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
@@ -35,6 +69,12 @@
             <terminal-line>this is a prompt line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
+            <terminal-line>line before image</terminal-line>
+            <terminal-line>line after image</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
@@ -44,13 +84,7 @@
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is a prompt line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <img class="bubbi" src="Rose GUI.png">
+            <img imageDelay=2000 imageTime=2000 class="bubbi" src="Rose GUI.png">
         </terminal-animation>
     </body>
 </html>

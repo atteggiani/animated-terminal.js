@@ -50,6 +50,27 @@ function replaceTagSymbols(str) {
     return str?.replace('<','&lt;').replace('>','&gt;')
 }
 
+function sleep(time) {
+    /**
+    * Sleep for an amount of time
+    */
+    return new Promise(resolve => setTimeout(resolve, time));
+}
+
+function hide(element) {
+    /**
+    * Change element's style to 'hidden'
+    */
+    element.style.visibility = 'hidden';
+}
+
+function show(element) {
+    /**
+    * Change element's style to 'visible'
+    */
+    element.style.visibility = 'visible';
+}
+
 const terminalTemplate = document.createElement('template');
 terminalTemplate.innerHTML = `
     <style>
@@ -175,13 +196,19 @@ class TerminalAnimation extends HTMLElement {
     * @param {number || string} startDelay - Delay before the start of terminal animation, in ms.
     * @param {number || string} lineDelay - Delay before the start of each terminal line animation, in ms.
     * @param {number || string} typingDelay - Delay between each typed character in the terminal, in ms.
-    * @param {number || string} imageDelay - Amount of time for an image to stay opened before being iconified, in ms.
+    * @param {number || string} imageDelay - Delay before the content inside <img> gets shown, in ms 
+    *   (similar to lineDelay, but for <img> tags).
+    * @param {number || string} imageTime - Amount of time for an image to stay opened before being iconified, in ms. 
+    *   If not present, the image will stay open (You will still be able to click on it to iconify).  
     * @param {string} progressChar – Character(s) to use for progress bar for the entire terminal, defaults to █.
     * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
     * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
-    * @param {string} inputChar – Character(s) to use before the 'input' prompt for the entire terminal, defaults to '$'.
-    * @param {string} directory – Directory to write in the 'input' prompt before the input character for the entire terminal.
-    * @param {string} promptChar – Character(s) to use before the 'prompt' prompt for the entire terminal, defaults to '>>>'.
+    * @param {string} inputChar – Character(s) to use before the 'input' prompt for the entire terminal, 
+    *   defaults to '$'.
+    * @param {string} directory – Directory to write in the 'input' prompt before the input character for 
+    *   the entire terminal.
+    * @param {string} promptChar – Character(s) to use before the 'prompt' prompt for the entire terminal,
+    *   defaults to '>>>'.
     * @param {string} PS1 – String to write in the 'input' prompt before the actual line for the entire terminal. 
     *  If present, any 'directory' or 'input' attribute will be disregarded.
     *  Accepts HTML format. E.g.: "This is a <span style='color: green;'>valid</span> PS1 attribute"
@@ -212,7 +239,7 @@ class TerminalAnimation extends HTMLElement {
     
     get container() {
         const container = this.shadowRoot.querySelector(".terminal-container");
-        for (let attr of ['lineDelay','typingDelay','imageDelay']) {
+        for (let attr of ['lineDelay','typingDelay','imageDelay','imageTime']) {
             if (this.hasAttribute(attr)) {
                 container.setAttribute(attr,parseFloat(this.getAttribute(attr)))
             }    
@@ -269,6 +296,27 @@ class TerminalAnimation extends HTMLElement {
         * Sets lineDelay property.
         */
         this.imageDelay = time;
+    }
+    
+    get _imageTime() {
+        /**
+        * Resets lineDelay property.
+        */
+        const img = (Array.from(this.lines).filter(line => line.tagName?.toLowerCase() == 'img'));
+        if (img.length && img[0].hasAttribute('imageTime')) {
+            this.imageTime = parseFloat(img[0].getAttribute('imageTime'));
+        } else if (this.hasAttribute('imageTime')) {
+            this.imageTime = parseFloat(this.getAttribute('imageTime'));
+        } else {
+            this.imageTime = false;
+        }
+    }
+
+    set _imageTime(time) {
+        /**
+        * Sets lineDelay property.
+        */
+        this.imageTime = time;
     }
 
     get progressChar() {
@@ -393,13 +441,12 @@ class TerminalAnimation extends HTMLElement {
         * Also remove any other img tag after another img tag has been used (Only allow one img per terminal)
         * Create the 'lines' property with the kept lines.
         */
-        let count = 0;
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
             if (node.tagName?.toLowerCase() == 'terminal-line') {
                 continue
-            } else if (node.tagName?.toLowerCase() == 'img' && count == 0) {
-                    count++;
+            } else if (node.tagName?.toLowerCase() == 'img' && ! this.img) {
+                    this.img = node;
                     continue
             } else {
                 node.remove();
@@ -410,7 +457,6 @@ class TerminalAnimation extends HTMLElement {
     }
 
     async generateAllProgress() {
-        // await this.sleep(0.000000000001) // Wait for lines to load
         this.lines.forEach(line => {
             if (line.data == 'progress') {
                 line.generateProgress();
@@ -418,40 +464,20 @@ class TerminalAnimation extends HTMLElement {
         })
     }
 
-    hide(element) {
-        /**
-        * Change element's style to 'hidden'
-        */
-        element.style.visibility = 'hidden';
-    }
-    
-    show(element) {
-        /**
-        * Change element's style to 'visible'
-        */
-        element.style.visibility = 'visible';
-    }
-    
-    sleep(time) {
-        /**
-        * Sleep for an amount of time
-        */
-        return new Promise(resolve => setTimeout(resolve, time));
-    }
-    
     resetDelays() {
         this.lines.forEach(line => {
             line._lineDelay;
             line._typingDelay;
         })
         this._imageDelay;
+        this._imageTime;
     }
 
     hideLines() {
         /**
         * Hide lines inside the terminal
         */
-        this.lines.forEach(line => this.hide(line));
+        this.lines.forEach(line => hide(line));
     }
 
     generateRestartButton() {
@@ -470,8 +496,8 @@ class TerminalAnimation extends HTMLElement {
         restart.href = '';
         restart.classList.add('restart-button');
         restart.innerHTML = "restart ↻";
-        this.hide(restart);
-        restart.addEventListener('click', e => this.hide(restart));
+        hide(restart);
+        restart.addEventListener('click', e => hide(restart));
         this.restartButton = restart;
         this.container.appendChild(restart);
     }
@@ -486,6 +512,7 @@ class TerminalAnimation extends HTMLElement {
                 line._typingDelay = 0;
             })
             _this._imageDelay = 0;
+            _this._imageTime = 0;
         }
         const fast = document.createElement('a')
         fast.setAttribute('part','fast-button')
@@ -496,8 +523,8 @@ class TerminalAnimation extends HTMLElement {
         fast.href = '';
         fast.classList.add('fast-button');
         fast.innerHTML = "fast ❯❯❯";
-        this.hide(fast);
-        fast.addEventListener('click', e => this.hide(fast));
+        hide(fast);
+        fast.addEventListener('click', e => hide(fast));
         this.addFocusOnTerminalContainerOnClick(fast);
         this.fastButton = fast;
         this.container.prepend(fast);
@@ -522,7 +549,7 @@ class TerminalAnimation extends HTMLElement {
         this.lines.forEach(line => {
             let elem = line.shadowRoot?.querySelector('.ps1, .promptChar');
             if (elem) {
-                this.hide(elem);
+                hide(elem);
             }
         })
     }
@@ -533,25 +560,22 @@ class TerminalAnimation extends HTMLElement {
     }
 
     setImg() {
-        this.lines.forEach(line => {
-            if (line.tagName.toLowerCase() == 'img') {
-                const style = getComputedStyle(this.container);
-                this.container.style.height = style.maxHeight;
-                const ratio = line.width/line.height;
-                const maxWidth = parseFloat(style.width) - parseFloat(style.paddingLeft) - parseFloat(style.paddingRight);
-                const maxHeight = parseFloat(style.height) - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
-                if (line.width > maxWidth) {
-                    line.width = maxWidth;
-                } 
-                if (line.height > maxHeight) {
-                    line.width = maxHeight*ratio;
-                }
-                const padding = 9;
-                line.style.marginLeft = `${padding - line.offsetLeft}px`;
-                line.style.marginTop = `${padding - line.offsetTop}px`;
-                line.style.top = `${padding - parseInt(getComputedStyle(line.parentElement.container).paddingTop)}px`;
-            }
-        })
+        const img = this.img;
+        const containerStyle = getComputedStyle(this.container);
+        this.container.style.height = containerStyle.maxHeight;
+        const ratio = img.width/img.height;
+        const maxWidth = parseFloat(containerStyle.width) - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
+        const maxHeight = parseFloat(containerStyle.height) - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom);
+        if (img.width > maxWidth) {
+            img.width = maxWidth;
+        } 
+        if (img.height > maxHeight) {
+            img.width = maxHeight*ratio;
+        }
+        const padding = 9;
+        img.style.marginLeft = `${padding - img.offsetLeft}px`;
+        img.style.marginTop = `${padding - img.offsetTop}px`;
+        img.style.top = `${padding - parseInt(containerStyle.paddingTop)}px`;
     }
         
 
@@ -559,10 +583,10 @@ class TerminalAnimation extends HTMLElement {
          /**
          * Start the animation and render the lines
          */
-        // while (this.container.scrollTop != 0) {await this.sleep(50)} //Start when the container is scroll up to the top.
+        // while (this.container.scrollTop != 0) {await sleep(50)} //Start when the container is scroll up to the top.
         this.autoScroll();
-        await this.sleep(this.startDelay);
-        this.show(this.fastButton);
+        await sleep(this.startDelay);
+        show(this.fastButton);
         for (let line of this.lines) {
             if (line.tagName.toLowerCase() == 'terminal-line') {
                 line.classList.add('isBeingTyped');
@@ -571,14 +595,17 @@ class TerminalAnimation extends HTMLElement {
                 line.classList.remove('isBeingTyped');
             } else if (line.tagName.toLowerCase() == 'img') {
                 // Handle <img> lines
-                this.show(line);
-                // await this.sleep(this.imageDelay);
-                // this.hide(line);
+                await sleep(this.imageDelay);
+                show(line);
+                if (this.imageTime || this.imageTime === 0) {
+                    await sleep(this.imageTime);
+                    hide(line);
+                }
             }
         }
-        this.hide(this.fastButton);
+        hide(this.fastButton);
         this.resetDelays();
-        this.show(this.restartButton);
+        show(this.restartButton);
     }
 
     initialiseWhenVisible() {
@@ -742,8 +769,7 @@ lineTemplate.innerHTML = `
         }
         
         div.terminal-line {
-            min-height: 2em;
-            line-height: 2;
+            line-height: 1.5em;
             display: inline;
             align-self: center;
         }
@@ -976,34 +1002,13 @@ class TerminalLine extends HTMLElement {
         }
         this.nodes = Array.from(this.childNodes);
     }
-    
-    hide(element=this) {
-        /**
-        * Change element's style to 'hidden'
-        */
-        element.style.visibility = 'hidden';
-    }
-    
-    show(element=this) {
-        /**
-        * Change element's style to 'visible'
-        */
-        element.style.visibility = 'visible';
-    }
-
-    sleep(time) {
-        /**
-        * Sleep for an amount of time
-        */
-        return new Promise(resolve => setTimeout(resolve, time));
-    }
 
     showPS1() {
-        this.show(this.shadowRoot.querySelector('.ps1'));
+        show(this.shadowRoot.querySelector('.ps1'));
     }
     
     showPromptChar() {
-        this.show(this.shadowRoot.querySelector('.promptChar'));
+        show(this.shadowRoot.querySelector('.promptChar'));
     }
 
     async type() {
@@ -1014,15 +1019,15 @@ class TerminalLine extends HTMLElement {
             this.showPS1();
             await this.typeInput();
         } else if (this.data == 'progress') {
-            await this.sleep(this.lineDelay);
+            await sleep(this.lineDelay);
             await this.typeProgress();
             return;
         } else if (this.data == 'prompt') {
             this.showPromptChar();
             await this.typeInput();
         } else {
-            await this.sleep(this.lineDelay);
-            this.show()
+            await sleep(this.lineDelay);
+            show(this)
         }
 
     }
@@ -1045,9 +1050,9 @@ class TerminalLine extends HTMLElement {
         const progressSteps = Math.round((parseInt(getComputedStyle(this).width)*0.8*(this.progressPercent/100))/progressCharWidth);
         let percent = 0;
         this.textContent = '0%';
-        this.show();
+        show(this);
         for (let i=1; i<=progressSteps; i++) {
-            await this.sleep(this.typingDelay);
+            await sleep(this.typingDelay);
             percent = Math.round(this.progressPercent/progressSteps*i)
             this.textContent = `${this.progressChar.repeat(i)} ${percent}%`;
         }
@@ -1064,14 +1069,14 @@ class TerminalLine extends HTMLElement {
          * Animate an input line.
          */
         let textArray = this.getAndRemoveTextContent();
-        this.show();
+        show(this);
         this.addCursor();
-        await this.sleep(this.lineDelay);
+        await sleep(this.lineDelay);
         for (let i=0; i<this.nodes.length; i++) {
             let node = this.nodes[i];
             let text = textArray[i];
             for (let char of text) {
-                await this.sleep(this.typingDelay);
+                await sleep(this.typingDelay);
                 node.textContent += char;
             }
         }
@@ -1111,7 +1116,7 @@ class TerminalLine extends HTMLElement {
             this.line.prepend(elem)
         }
         if (!this.parentElement.static) {
-            this.hide(elem);
+            hide(elem);
         }
     }
 }
