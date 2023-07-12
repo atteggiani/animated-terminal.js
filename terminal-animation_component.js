@@ -101,7 +101,7 @@ terminalTemplate.innerHTML = `
             margin-bottom: 15px;
             background-color: var(--color-bg);
             color: var(--color-text);
-            display: flex;
+            display: block;
             flex-direction: column;
             justify-content: flex-start;
             font-size: 13px;
@@ -132,16 +132,33 @@ terminalTemplate.innerHTML = `
                     box-shadow: 0px 0 0 #d9515d, 25px 0 0 #f4c025, 50px 0 0 #3ec930;
         }
         
-        .fast-button {
-            text-decoration: none;
+        .fast-button-wrapper {
             position: sticky;
-            align-self: flex-end;
-            justify-self: center;
-            top: 0;
-            margin-top: -5px;
-            margin-right: -20px;
+            top: 0px;
+        }
+        
+        .fast-button-wrapper:hover {
+            cursor: pointer;
+        }
+        
+        .restart-button-wrapper {
+            position: sticky;
+            top: var(--top);
+        }
+        
+        .restart-button-wrapper:hover {
+            cursor: pointer;
+        }
+        
+        .fast-button {
+            position: absolute;
+            text-decoration: none;
             color: var(--color-control-buttons);
-            z-index: 2;
+            z-index: 3;
+            width: fit-content;
+            text-align: center;
+            top: var(--top);
+            right: var(--right);
         }
         
         .fast-button:hover {
@@ -149,15 +166,12 @@ terminalTemplate.innerHTML = `
         }
         
         .restart-button {
-            position: sticky;
+            position: absolute;
             text-decoration: none;
-            align-self: flex-end;
-            justify-self: center;
-            margin-bottom: 0px;
-            margin-right: -20px;
             color: var(--color-control-buttons);
-            bottom: 0px;
             z-index: 2;
+            top: var(--top);
+            right: var(--right);
         }
 
         .restart-button:hover {
@@ -165,12 +179,36 @@ terminalTemplate.innerHTML = `
         
         }
         
-        ::slotted(.img-wrapper) {
-            position: sticky;
+        .img-wrapper {
+            position: absolute;
+            position: -webkit-sticky;
             top: 0px;
-            background-color: purple;
+            justify-self: flex-start;
         }
 
+        .img-wrapper > img {
+            position: sticky;
+            top: 0px;
+            border-radius: 8px;
+            border: solid 1px transparent;
+            max-width: 90%;
+            max-height: 90%;
+        }
+
+        /*
+        // img.style.position = 'absolute';
+        // img.style.top = '-294px';
+        // img.style.width = '200px';
+        // img.style.height = '300px';
+        // z-index: 1;
+        // border: solid 2px transparent;
+        // border-radius: 8px;
+        // -webkit-box-sizing: border-box;
+        // .img-wrapper:hover) 
+        
+        // border: solid 2px red;
+        // cursor: move;
+        */
     </style>
 
     <div class='terminal-container' part="terminal-container" tabindex=-1>
@@ -227,7 +265,9 @@ class TerminalAnimation extends HTMLElement {
                 }
             } else {
                 this.generateAllProgress();
-                this.setImg();
+                if (this.img) {
+                    this.setImg();
+                }
             }
         }
     }
@@ -276,8 +316,8 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Resets lineDelay property.
         */
-        if (this.img && this.img.hasAttribute('imageDelay')) {
-            this.imageDelay = parseFloat(this.img.getAttribute('imageDelay'));
+        if (this.img && this.img.img.hasAttribute('imageDelay')) {
+            this.imageDelay = parseFloat(this.img.img.getAttribute('imageDelay'));
         } else if (this.hasAttribute('imageDelay')) {
             this.imageDelay = parseFloat(this.getAttribute('imageDelay'));
         } else {
@@ -296,8 +336,8 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Resets lineDelay property.
         */
-        if (this.img && this.img.hasAttribute('imageTime')) {
-            this.imageTime = parseFloat(this.img.getAttribute('imageTime'));
+        if (this.img && this.img.img.hasAttribute('imageTime')) {
+            this.imageTime = parseFloat(this.img.img.getAttribute('imageTime'));
         } else if (this.hasAttribute('imageTime')) {
             this.imageTime = parseFloat(this.getAttribute('imageTime'));
         } else {
@@ -430,22 +470,23 @@ class TerminalAnimation extends HTMLElement {
 
     keepLines() {
         /*
-        * Delete all terminal lines without tags or whose tags are not <terminal-line> or <img>
-        * Also remove any other img tag after another img tag has been used (Only allow one img per terminal)
+        * Delete all terminal lines without tags or whose tags are not <terminal-line> or <img> (only first one, others are deleted)
+        * Also create the 'img' property if <img> tag is present, remove img node from lines and append it to shadowDOM
         * Create the 'lines' property with the kept lines.
         */
         for (let i=0; i<this.childNodes.length; i++) {
             let node = this.childNodes[i];
-            if (node.tagName?.toLowerCase() == 'terminal-line') {
-                continue
-            } else if (node.tagName?.toLowerCase() == 'img' && ! this.img) {
-                    this.img = node;
-                    let imgwrapper=document.createElement('div');
-                    imgwrapper.classList.add('img-wrapper');
-                    this.insertBefore(imgwrapper,node);
-                    imgwrapper.appendChild(node);
-                    continue
-            } else {
+            if (node.tagName?.toLowerCase() == 'img' && ! this.img) {
+                this.img = {
+                    img: node,
+                    index: i,
+                }
+                let imgwrapper=document.createElement('div');
+                imgwrapper.classList.add('img-wrapper');
+                this.container.appendChild(imgwrapper);
+                imgwrapper.appendChild(node);
+                i--;
+            } else if (node.tagName?.toLowerCase() != 'terminal-line') {
                 node.remove();
                 i--;
             }
@@ -485,18 +526,25 @@ class TerminalAnimation extends HTMLElement {
         restart.setAttribute('part','restart-button')
         restart.onclick = async e => {
             e.preventDefault();
+            this.container.focus();
+            hide(restart);
             this.hideAll();
             this.mutationObserver.disconnect();
             await this.scrollToTop();
             this.initialiseAnimation();
         }
-        restart.href = '';
         restart.classList.add('restart-button');
         restart.innerHTML = "restart ↻";
-        hide(restart);
-        restart.addEventListener('click', e => hide(restart));
         this.restartButton = restart;
         this.container.appendChild(restart);
+        let wrapper = document.createElement('div')
+        wrapper.classList.add('restart-button-wrapper');
+        wrapper.appendChild(restart);
+        this.container.prepend(wrapper);
+        const containerStyle = getComputedStyle(this.container);
+        wrapper.setAttribute("style",`--top: ${parseFloat(containerStyle.height) - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom)}px;`);
+        restart.setAttribute("style",`--top: -14px; --right: -15px;`);
+        hide(restart);
     }
 
     generateFastButton() {
@@ -515,16 +563,19 @@ class TerminalAnimation extends HTMLElement {
         fast.setAttribute('part','fast-button')
         fast.onclick = (e) => {
             e.preventDefault();
+            this.container.focus();
+            hide(fast);
             nullifyDelays(this);
         }
-        fast.href = '';
         fast.classList.add('fast-button');
         fast.innerHTML = "fast ❯❯❯";
-        hide(fast);
-        fast.addEventListener('click', e => hide(fast));
-        this.addFocusOnTerminalContainerOnClick(fast);
         this.fastButton = fast;
-        this.container.prepend(fast);
+        let wrapper = document.createElement('div')
+        wrapper.classList.add('fast-button-wrapper');
+        wrapper.appendChild(fast);
+        this.container.prepend(wrapper);
+        fast.setAttribute("style",`--top: ${11-wrapper.offsetTop}px; --right: -15px;`);
+        hide(fast);
     }
 
     setTerminal() {
@@ -534,7 +585,9 @@ class TerminalAnimation extends HTMLElement {
         this.hideLines();
         this.generateRestartButton();
         this.generateFastButton();
-        this.setImg();
+        if (this.img) {
+            this.setImg();
+        }
         this.generateObservers();
         this.resetDelays();
     }
@@ -557,35 +610,18 @@ class TerminalAnimation extends HTMLElement {
     }
 
     setImg() {
-        const img = this.img;
+        const img = this.img.img;
         const containerStyle = getComputedStyle(this.container);
         this.container.style.height = containerStyle.maxHeight;
         const ratio = img.width/img.height;
         const maxWidth = parseFloat(containerStyle.width) - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
         const maxHeight = parseFloat(containerStyle.height) - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom);
-        if (img.width > maxWidth) {
-            img.width = maxWidth;
-        } 
-        if (img.height > maxHeight) {
-            img.width = maxHeight*ratio;
-        }
-        const padding = 9;
-        // img.style.position = 'absolute';
-        // img.style.top = '-294px';
-        // img.style.width = '200px';
-        // img.style.height = '300px';
-        // img.style.marginLeft = `${padding - img.offsetLeft}px`;
-        // img.style.marginTop = `${padding - img.offsetTop}px`;
-        // img.style.top = `${padding - parseInt(containerStyle.paddingTop)}px`;
-        // z-index: 1;
-        // border: solid 2px transparent;
-        // border-radius: 8px;
-        // -webkit-box-sizing: border-box;
-        // .img-wrapper:hover) 
-        
-        // border: solid 2px red;
-        // cursor: move;
-            
+        // if (img.width > maxWidth) {
+        //     img.width = maxWidth;
+        // } 
+        // if (img.height > maxHeight) {
+        //     img.width = maxHeight*ratio;
+        // }
     }
         
 
@@ -597,21 +633,20 @@ class TerminalAnimation extends HTMLElement {
         this.autoScroll();
         await sleep(this.startDelay);
         show(this.fastButton);
-        for (let line of this.lines) {
-            if (line.tagName.toLowerCase() == 'terminal-line') {
-                line.classList.add('isBeingTyped');
-                // Handle <terminal-line> lines
-                await line.type();
-                line.classList.remove('isBeingTyped');
-            } else if (line.classList.contains('img-wrapper')) {
-                // Handle <img> lines
+        for (let i=0; i<this.lines.length; i++) {
+            let line = this.lines[i];
+            if (this.img && (this.img.index == i || i-1 == this.lines.length)) { //Show image if present 
                 await sleep(this.imageDelay);
-                show(line);
+                show(this.img.img);
                 if (this.imageTime || this.imageTime === 0) {
                     await sleep(this.imageTime);
-                    // hide(line);
+                    // hide(this.img.img);
                 }
             }
+            // Type line
+            line.classList.add('isBeingTyped');
+            await line.type();
+            line.classList.remove('isBeingTyped');
         }
         hide(this.fastButton);
         this.resetDelays();
@@ -634,10 +669,6 @@ class TerminalAnimation extends HTMLElement {
             rootMargin: "-50px",
         })
         observer.observe(this);
-    }
-
-    addFocusOnTerminalContainerOnClick(elem) {
-        elem.addEventListener('click',() => this.container.focus(), {passive: true})
     }
 
     scrollToTop() {
@@ -707,13 +738,7 @@ class TerminalAnimation extends HTMLElement {
         const mutationFunction = async entry => {
             let nextSibling = entry.target.nextSibling;
             if (nextSibling) {
-                if (nextSibling.tagName.toLowerCase() == 'terminal-line') {
-                    intersectionObserver.observe(nextSibling)
-                } else if (nextSibling.nextSibling) {
-                    intersectionObserver.observe(nextSibling.nextSibling)
-                } else {
-                    await this.scrollToBottom();    
-                }
+                intersectionObserver.observe(nextSibling)
             } else {
                 await this.scrollToBottom();
             }
@@ -733,13 +758,11 @@ class TerminalAnimation extends HTMLElement {
         * Auto scrolls 1 line if the terminal content exceeds the terminal max-height.
         */
         this.lines.forEach(line => {
-            if (line.tagName.toLowerCase() == 'terminal-line') {
-                this.mutationObserver.observe(line,{
-                    attributes: true,
-                    attributeOldValue: true,
-                    attributeFilter: ["class"]
-                })
-            }
+            this.mutationObserver.observe(line,{
+                attributes: true,
+                attributeOldValue: true,
+                attributeFilter: ["class"]
+            })
         });
 
         this.addEventListener('wheel', e => {
@@ -829,7 +852,7 @@ class TerminalLine extends HTMLElement {
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
         this.resetDelays();
-        this.container.addFocusOnTerminalContainerOnClick(this);
+        this.addEventListener('click', e => this.container.focus(), {passive: true})
     }
     
     get container() {
