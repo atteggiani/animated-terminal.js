@@ -107,13 +107,12 @@ terminalTemplate.innerHTML = `
             font-size: 13px;
             font-family: 'Roboto Mono', 'Fira Mono', Consolas, Menlo, Monaco, 'Courier New', Courier, monospace;
             font-weight: bold;
-            border-radius: 4px;
+            border-radius: 8px;
             padding: 30px 25px 10px;
             position: relative;
             overflow-y: auto;
             overflow-x: hidden;
-            -webkit-box-sizing: border-box;
-                    box-sizing: border-box;
+            box-sizing: border-box;
         }
 
         .terminal-container::before {
@@ -135,6 +134,7 @@ terminalTemplate.innerHTML = `
         .fast-button-wrapper {
             position: sticky;
             top: 0px;
+            z-index: 1;
         }
         
         .fast-button-wrapper:hover {
@@ -144,6 +144,7 @@ terminalTemplate.innerHTML = `
         .restart-button-wrapper {
             position: sticky;
             top: var(--top);
+            z-index: 1;
         }
         
         .restart-button-wrapper:hover {
@@ -154,7 +155,6 @@ terminalTemplate.innerHTML = `
             position: absolute;
             text-decoration: none;
             color: var(--color-control-buttons);
-            z-index: 3;
             width: fit-content;
             text-align: center;
             top: var(--top);
@@ -169,7 +169,6 @@ terminalTemplate.innerHTML = `
             position: absolute;
             text-decoration: none;
             color: var(--color-control-buttons);
-            z-index: 2;
             top: var(--top);
             right: var(--right);
         }
@@ -180,35 +179,29 @@ terminalTemplate.innerHTML = `
         }
         
         .img-wrapper {
-            position: absolute;
+            position: sticky;
             position: -webkit-sticky;
-            top: 0px;
-            justify-self: flex-start;
+            width: 100%;
+            height: 100%;
+            /* bottom: 0px; */
         }
 
         .img-wrapper > img {
-            position: sticky;
-            top: 0px;
+            position: absolute;
             border-radius: 8px;
-            border: solid 1px transparent;
-            max-width: 90%;
-            max-height: 90%;
+            border: solid 2px transparent;
+            max-width: 100%;
+            max-height: 100%;
+            margin-top: -20px;
+            margin-left: -15px;
+            z-index: 0;
+        }
+        
+        .img-wrapper > img:hover {
+            border: solid 2px var(--color-control-buttons);
+            cursor: move;
         }
 
-        /*
-        // img.style.position = 'absolute';
-        // img.style.top = '-294px';
-        // img.style.width = '200px';
-        // img.style.height = '300px';
-        // z-index: 1;
-        // border: solid 2px transparent;
-        // border-radius: 8px;
-        // -webkit-box-sizing: border-box;
-        // .img-wrapper:hover) 
-        
-        // border: solid 2px red;
-        // cursor: move;
-        */
     </style>
 
     <div class='terminal-container' part="terminal-container" tabindex=-1>
