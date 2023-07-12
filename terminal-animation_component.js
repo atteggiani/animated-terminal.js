@@ -95,7 +95,7 @@ terminalTemplate.innerHTML = `
             word-break: break-all;
             scroll-behavior: smooth;
             scrollbar-gutter: stable;
-            max-swidth: 100%;
+            max-width: 100%;
             max-height: 510px;
             margin-top: 15px;
             margin-bottom: 15px;
@@ -141,6 +141,7 @@ terminalTemplate.innerHTML = `
             margin-top: -5px;
             margin-right: -20px;
             color: var(--color-control-buttons);
+            z-index: 2;
         }
         
         .fast-button:hover {
@@ -156,6 +157,7 @@ terminalTemplate.innerHTML = `
             margin-right: -20px;
             color: var(--color-control-buttons);
             bottom: 0px;
+            z-index: 2;
         }
 
         .restart-button:hover {
@@ -163,17 +165,10 @@ terminalTemplate.innerHTML = `
         
         }
         
-        ::slotted(img) {
+        ::slotted(.img-wrapper) {
             position: sticky;
-            border: solid 2px transparent;
-            -webkit-box-sizing: border-box;
-            border-radius: 8px;
-            z-index: 10;
-        }
-
-        ::slotted(img:hover) {
-            border: solid 2px red;
-            cursor: move;
+            top: 0px;
+            background-color: purple;
         }
 
     </style>
@@ -281,9 +276,8 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Resets lineDelay property.
         */
-        const img = (Array.from(this.lines).filter(line => line.tagName?.toLowerCase() == 'img'));
-        if (img.length && img[0].hasAttribute('imageDelay')) {
-            this.imageDelay = parseFloat(img[0].getAttribute('imageDelay'));
+        if (this.img && this.img.hasAttribute('imageDelay')) {
+            this.imageDelay = parseFloat(this.img.getAttribute('imageDelay'));
         } else if (this.hasAttribute('imageDelay')) {
             this.imageDelay = parseFloat(this.getAttribute('imageDelay'));
         } else {
@@ -302,9 +296,8 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Resets lineDelay property.
         */
-        const img = (Array.from(this.lines).filter(line => line.tagName?.toLowerCase() == 'img'));
-        if (img.length && img[0].hasAttribute('imageTime')) {
-            this.imageTime = parseFloat(img[0].getAttribute('imageTime'));
+        if (this.img && this.img.hasAttribute('imageTime')) {
+            this.imageTime = parseFloat(this.img.getAttribute('imageTime'));
         } else if (this.hasAttribute('imageTime')) {
             this.imageTime = parseFloat(this.getAttribute('imageTime'));
         } else {
@@ -447,6 +440,10 @@ class TerminalAnimation extends HTMLElement {
                 continue
             } else if (node.tagName?.toLowerCase() == 'img' && ! this.img) {
                     this.img = node;
+                    let imgwrapper=document.createElement('div');
+                    imgwrapper.classList.add('img-wrapper');
+                    this.insertBefore(imgwrapper,node);
+                    imgwrapper.appendChild(node);
                     continue
             } else {
                 node.remove();
@@ -573,9 +570,22 @@ class TerminalAnimation extends HTMLElement {
             img.width = maxHeight*ratio;
         }
         const padding = 9;
-        img.style.marginLeft = `${padding - img.offsetLeft}px`;
-        img.style.marginTop = `${padding - img.offsetTop}px`;
-        img.style.top = `${padding - parseInt(containerStyle.paddingTop)}px`;
+        // img.style.position = 'absolute';
+        // img.style.top = '-294px';
+        // img.style.width = '200px';
+        // img.style.height = '300px';
+        // img.style.marginLeft = `${padding - img.offsetLeft}px`;
+        // img.style.marginTop = `${padding - img.offsetTop}px`;
+        // img.style.top = `${padding - parseInt(containerStyle.paddingTop)}px`;
+        // z-index: 1;
+        // border: solid 2px transparent;
+        // border-radius: 8px;
+        // -webkit-box-sizing: border-box;
+        // .img-wrapper:hover) 
+        
+        // border: solid 2px red;
+        // cursor: move;
+            
     }
         
 
@@ -593,13 +603,13 @@ class TerminalAnimation extends HTMLElement {
                 // Handle <terminal-line> lines
                 await line.type();
                 line.classList.remove('isBeingTyped');
-            } else if (line.tagName.toLowerCase() == 'img') {
+            } else if (line.classList.contains('img-wrapper')) {
                 // Handle <img> lines
                 await sleep(this.imageDelay);
                 show(line);
                 if (this.imageTime || this.imageTime === 0) {
                     await sleep(this.imageTime);
-                    hide(line);
+                    // hide(line);
                 }
             }
         }
@@ -893,6 +903,7 @@ class TerminalLine extends HTMLElement {
         this._lineDelay;
         this._typingDelay;
         this.container._imageDelay;
+        this.container._imageTime;
     } 
     
     get progressChar() {

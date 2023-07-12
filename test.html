@@ -10,25 +10,52 @@
     </head>
     <style>
         .bubbi {
-            /* display: inline; */
+            position: absolute;
+            top: -20px;
+            left: -15px;
+            border-radius: 8px;
+            border: solid 1px transparent;
+        }
+        
+        .bubbi:hover {
+            border: solid 1px red;
+            cursor: move;
         }
         
         body {
+            word-break: break-all;
+            scroll-behavior: smooth;
+            scrollbar-gutter: stable;
+            max-width: 100%;
+            max-height: 510px;
+            margin-top: 15px;
+            margin-bottom: 15px;
+            background-color: var(--color-bg);
+            color: var(--color-text);
+            display: flex;
+            flex-direction: column;
+            justify-content: flex-start;
+            font-size: 13px;
+            font-family: 'Roboto Mono', 'Fira Mono', Consolas, Menlo, Monaco, 'Courier New', Courier, monospace;
+            font-weight: bold;
+            border-radius: 4px;
+            padding: 30px 25px 10px;
             position: relative;
-            overflow: auto;
-            height: 10000px;
+            overflow-y: auto;
+            overflow-x: hidden;
+            -webkit-box-sizing: border-box;
+                    box-sizing: border-box;
         }
 
         .parent {
             position: sticky;
             top: 50px;
-            background-color: blueviolet;
+            margin-left: 50px;
         }
 
         .child {
             position: absolute;
             top: 0px;
-            left: 150px;
             width: 180px;
             height: 180px;
             background-color: orangered;
@@ -45,10 +72,28 @@
         <div>test</div>
         <div>test</div>
         <div>test</div>
-        <div class="parent">
-            <div class="child">
-            </div>
-        </div>
+        <div class="parent"><div class="child"></div></div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
+        <div>test</div>
         <div>test</div>
         <div>test</div>
         <div>test</div>
@@ -60,16 +105,8 @@
             <terminal-line data="input">this is an input line</terminal-line>
             <terminal-line data="input" directory="test &#127759;">this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is a prompt line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is a prompt line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
             <terminal-line>line before image</terminal-line>
+            <img imageDelay=2000 imageTime=2000 class="bubbi" src="Rose GUI.png">
             <terminal-line>line after image</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is a prompt line</terminal-line>
@@ -84,7 +121,24 @@
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
-            <img imageDelay=2000 imageTime=2000 class="bubbi" src="Rose GUI.png">
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is a prompt line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
+            <terminal-line>this is an input line</terminal-line>
         </terminal-animation>
     </body>
 </html>
