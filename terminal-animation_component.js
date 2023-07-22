@@ -153,9 +153,8 @@ terminalTemplate.innerHTML = `
         
         .fast-button {
             position: absolute;
-            text-decoration: none;
             color: var(--color-control-buttons);
-            width: fit-content;
+            width: max-content;
             text-align: center;
             top: var(--top);
             right: var(--right);
@@ -167,8 +166,9 @@ terminalTemplate.innerHTML = `
         
         .restart-button {
             position: absolute;
-            text-decoration: none;
             color: var(--color-control-buttons);
+            width: max-content;
+            text-align: center;
             top: var(--top);
             right: var(--right);
         }
@@ -177,31 +177,33 @@ terminalTemplate.innerHTML = `
             color: var(--color-control-buttons-hover);
         
         }
-        
+        /*
         .img-wrapper {
-            position: sticky;
-            position: -webkit-sticky;
-            width: 100%;
-            height: 100%;
-            /* bottom: 0px; */
-        }
-
-        .img-wrapper > img {
             position: absolute;
+            height: 500px;
+            background-color: purple;
+            bottom: 0px;
+            top: 0px;
+        }
+        
+        .img-wrapper > img {
+            position: sticky;
             border-radius: 8px;
             border: solid 2px transparent;
             max-width: 100%;
             max-height: 100%;
-            margin-top: -20px;
+            width: 500px;
             margin-left: -15px;
+            margin-top: -15px;
             z-index: 0;
+            top: -20px;
         }
         
         .img-wrapper > img:hover {
             border: solid 2px var(--color-control-buttons);
-            cursor: move;
+            cursor: pointer;
         }
-
+        */
     </style>
 
     <div class='terminal-container' part="terminal-container" tabindex=-1>
@@ -248,7 +250,9 @@ class TerminalAnimation extends HTMLElement {
         this.applyMode();
         this.DATA_TYPES = ['input','prompt','progress','output'];
         this.keepLines();
-        window.onload = () => { 
+        // Wait for terminal-lines to load, then continue
+        this.linesReady().then(() => {
+            this.lines.forEach(line=>console.log('After:', line.ready));
             if (!this.static) {
                 this.setTerminal();
                 if (this.init) {
@@ -258,11 +262,8 @@ class TerminalAnimation extends HTMLElement {
                 }
             } else {
                 this.generateAllProgress();
-                if (this.img) {
-                    this.setImg();
-                }
             }
-        }
+        })
     }
     
     get container() {
@@ -434,6 +435,19 @@ class TerminalAnimation extends HTMLElement {
         }
     }
 
+    linesReady() {
+        let lineReadyPromises = [];
+        this.lines.forEach(line => {
+            lineReadyPromises.push(new Promise(async resolve => {
+                while (!line.ready) {
+                    await sleep(1);
+                }
+                resolve();
+            }))
+        })
+        return Promise.all(lineReadyPromises)
+    }
+
     applyMode() {
         /**
         * Sets the color scheme according to the mode selected.
@@ -478,7 +492,11 @@ class TerminalAnimation extends HTMLElement {
                 imgwrapper.classList.add('img-wrapper');
                 this.container.appendChild(imgwrapper);
                 imgwrapper.appendChild(node);
+                node.setAttribute('part','img');
+                imgwrapper.setAttribute('part','wrapper');
                 i--;
+                this.container.style.height = getComputedStyle(this.container).maxHeight;
+                imgwrapper.style.marginTop = `${-imgwrapper.offsetTop+30}px`
             } else if (node.tagName?.toLowerCase() != 'terminal-line') {
                 node.remove();
                 i--;
@@ -515,17 +533,17 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Generate restart button and adds it hidden to 'this.container'
         */
-        const restart = document.createElement('a')
+        const restart = document.createElement('div')
         restart.setAttribute('part','restart-button')
-        restart.onclick = async e => {
-            e.preventDefault();
-            this.container.focus();
+        const restartFunction = async (e) => {
             hide(restart);
             this.hideAll();
             this.mutationObserver.disconnect();
+            this.container.focus();
             await this.scrollToTop();
             this.initialiseAnimation();
         }
+        restart.addEventListener('click',restartFunction, {passive: true});
         restart.classList.add('restart-button');
         restart.innerHTML = "restart ↻";
         this.restartButton = restart;
@@ -544,22 +562,22 @@ class TerminalAnimation extends HTMLElement {
         /**
         * Generate fast button and adds it hidden to 'this.container'
         */
-        function nullifyDelays(_this) {
-            _this.lines.forEach(line => {
+        const nullifyDelays = () => {
+            this.lines.forEach(line => {
                 line._lineDelay = 0;
                 line._typingDelay = 0;
             })
-            _this._imageDelay = 0;
-            _this._imageTime = 0;
+            this._imageDelay = 0;
+            this._imageTime = 0;
         }
-        const fast = document.createElement('a')
+        const fast = document.createElement('div')
         fast.setAttribute('part','fast-button')
-        fast.onclick = (e) => {
-            e.preventDefault();
-            this.container.focus();
+        const fastFunction = async (e) => {
             hide(fast);
-            nullifyDelays(this);
+            nullifyDelays();
+            this.container.focus();
         }
+        fast.addEventListener('click', fastFunction, {passive: true});
         fast.classList.add('fast-button');
         fast.innerHTML = "fast ❯❯❯";
         this.fastButton = fast;
@@ -578,9 +596,6 @@ class TerminalAnimation extends HTMLElement {
         this.hideLines();
         this.generateRestartButton();
         this.generateFastButton();
-        if (this.img) {
-            this.setImg();
-        }
         this.generateObservers();
         this.resetDelays();
     }
@@ -600,29 +615,12 @@ class TerminalAnimation extends HTMLElement {
     hideAll() {
         this.hideLines();
         this.hidePS1AndPromptChar();
-    }
-
-    setImg() {
-        const img = this.img.img;
-        const containerStyle = getComputedStyle(this.container);
-        this.container.style.height = containerStyle.maxHeight;
-        const ratio = img.width/img.height;
-        const maxWidth = parseFloat(containerStyle.width) - parseFloat(containerStyle.paddingLeft) - parseFloat(containerStyle.paddingRight);
-        const maxHeight = parseFloat(containerStyle.height) - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom);
-        // if (img.width > maxWidth) {
-        //     img.width = maxWidth;
-        // } 
-        // if (img.height > maxHeight) {
-        //     img.width = maxHeight*ratio;
-        // }
-    }
-        
+    }   
 
     async initialiseAnimation() {
          /**
          * Start the animation and render the lines
          */
-        // while (this.container.scrollTop != 0) {await sleep(50)} //Start when the container is scroll up to the top.
         this.autoScroll();
         await sleep(this.startDelay);
         show(this.fastButton);
@@ -666,38 +664,24 @@ class TerminalAnimation extends HTMLElement {
 
     scrollToTop() {
     // Scroll to the top of the container.
-        this.container.scrollTop = 0
-        return new Promise(resolve => {
-            const scrollHandler = () => {
-                if (this.container.scrollTop == 0) {
-                    this.container.removeEventListener("scroll", scrollHandler);
-                    resolve();
-                }
+        this.container.scrollTop = 0;
+        return new Promise( async resolve => {
+            while (this.container.scrollTop != 0) {
+                await sleep(1); //Should find and better way to do this
             }
-            if (this.container.scrollTop == 0) {
-                resolve();
-            } else {
-                this.container.addEventListener("scroll", scrollHandler, {passive: true});
-            }
-        });
+            resolve();
+        })
     }
     
     scrollToBottom() {
     // Scroll to the bottom of the container.
         this.container.scrollTop = this.container.scrollHeight;
-        return new Promise(resolve => {
-            const scrollHandler = () => {
-                if (this.container.scrollTop = this.container.scrollHeight) {
-                    this.container.removeEventListener("scroll", scrollHandler);
-                    resolve();
-                }
+        return new Promise( async resolve => {
+            while (this.container.scrollTop != this.container.scrollHeight) {
+                await sleep(1); //Should find and better way to do this
             }
-            if (this.container.scrollTop = this.container.scrollHeight) {
-                resolve();
-            } else {
-                this.container.addEventListener("scroll", scrollHandler, {passive: true});
-            }
-        });
+            resolve();
+        })
     }
     
     scrollOneLine(line) {
@@ -706,7 +690,7 @@ class TerminalAnimation extends HTMLElement {
     }
 
     generateObservers() {
-        const intersectionFunction = entry => {
+        const intersectionFunction = async entry => {
             if (entry.intersectionRatio == 1) {
                 intersectionObserver.unobserve(entry.target);
             } else {
@@ -846,6 +830,8 @@ class TerminalLine extends HTMLElement {
         this.generatePS1AndPromptCharElements();
         this.resetDelays();
         this.addEventListener('click', e => this.container.focus(), {passive: true})
+        // this.ready = true;
+        this.ready = 'bubbi';
     }
     
     get container() {
