@@ -9,44 +9,17 @@
         <script src="terminal-animation_component.js" defer></script>
     </head>
     <style>
-        ::part(wrapper) {
-            position: absolute;
-            height: 2185px; /* this.container.scrollHeight */
-            width: fit-content;
-            background-color: purple;
-            top: 0px;
-            margin-top: 0px;
-            /* visibility: hidden; */
-        }
-
-        ::part(img) {
-            position: sticky;
-            border-radius: 8px;
-            border: solid 2px transparent;
-            max-width: 100%;
-            max-height: 100%;
-            width: 500px;
-            margin-left: -15px;
-            margin-top: -15px;
-            z-index: 0;
-            top: -20px;
-            /* visibility: hidden; */
-        }
         
-        ::part(img):hover {
-            border-color: var(--color-control-buttons);
-            cursor: pointer;
-        }
 
     </style>
     <body>
-        <terminal-animation>
+        <terminal-animation static>
             <terminal-line data="input">this is an input line</terminal-line>
             <terminal-line data="input" PS1="(User PC)<span style='color: purple;'>$</span> ">this is an input line</terminal-line>
             <terminal-line>this is an input line</terminal-line>
-            <terminal-line>line before image</terminal-line>
-            <img imageDelay=2000 imageTime=2000 class="bubbi" src="Rose GUI.png">
             <terminal-line>line after image</terminal-line>
+            <terminal-line>line before image</terminal-line>
+            <img imageDelay=1000 imageTime=3000 src="Rose GUI.png">
             <terminal-line>this is an input line</terminal-line>
             <terminal-line>this is a prompt line</terminal-line>
             <terminal-line>line after image</terminal-line>

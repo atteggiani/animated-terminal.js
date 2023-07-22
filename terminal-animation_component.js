@@ -108,7 +108,7 @@ terminalTemplate.innerHTML = `
             font-family: 'Roboto Mono', 'Fira Mono', Consolas, Menlo, Monaco, 'Courier New', Courier, monospace;
             font-weight: bold;
             border-radius: 8px;
-            padding: 30px 25px 10px;
+            padding: 30px 25px 22px;
             position: relative;
             overflow-y: auto;
             overflow-x: hidden;
@@ -177,33 +177,30 @@ terminalTemplate.innerHTML = `
             color: var(--color-control-buttons-hover);
         
         }
-        /*
+        
         .img-wrapper {
             position: absolute;
-            height: 500px;
-            background-color: purple;
-            bottom: 0px;
+            width: fit-content;
+            max-height: 490px;
+            height: var(--height);
             top: 0px;
+            margin-top: 0px;
         }
         
         .img-wrapper > img {
             position: sticky;
-            border-radius: 8px;
-            border: solid 2px transparent;
-            max-width: 100%;
-            max-height: 100%;
-            width: 500px;
             margin-left: -15px;
-            margin-top: -15px;
-            z-index: 0;
             top: -20px;
+            border-radius: 7px;
+            border: solid 2px transparent;
+            z-index: 0;
         }
         
         .img-wrapper > img:hover {
-            border: solid 2px var(--color-control-buttons);
+            border-color: var(--color-control-buttons);
             cursor: pointer;
         }
-        */
+        
     </style>
 
     <div class='terminal-container' part="terminal-container" tabindex=-1>
@@ -245,14 +242,18 @@ class TerminalAnimation extends HTMLElement {
     */
     constructor() {
         super();
+        // Hide all elements (lines and img)
+        this.querySelectorAll('*').forEach(elem=>elem.style.visibility = 'hidden')
+        // Attach shadowDOM
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(terminalTemplate.content.cloneNode(true));
+        // Keep only proper lines
+        this.keepLines();
+        // Apply colormode
         this.applyMode();
         this.DATA_TYPES = ['input','prompt','progress','output'];
-        this.keepLines();
         // Wait for terminal-lines to load, then continue
         this.linesReady().then(() => {
-            this.lines.forEach(line=>console.log('After:', line.ready));
             if (!this.static) {
                 this.setTerminal();
                 if (this.init) {
@@ -261,7 +262,9 @@ class TerminalAnimation extends HTMLElement {
                     this.initialiseWhenVisible();
                 }
             } else {
+                this.setImg();
                 this.generateAllProgress();
+                this.showAll();
             }
         })
     }
@@ -315,7 +318,7 @@ class TerminalAnimation extends HTMLElement {
         } else if (this.hasAttribute('imageDelay')) {
             this.imageDelay = parseFloat(this.getAttribute('imageDelay'));
         } else {
-            this.imageDelay = 3000;
+            this.imageDelay = 1500;
         }
     }
 
@@ -335,7 +338,7 @@ class TerminalAnimation extends HTMLElement {
         } else if (this.hasAttribute('imageTime')) {
             this.imageTime = parseFloat(this.getAttribute('imageTime'));
         } else {
-            this.imageTime = false;
+            this.imageTime = 3000;
         }
     }
 
@@ -496,7 +499,6 @@ class TerminalAnimation extends HTMLElement {
                 imgwrapper.setAttribute('part','wrapper');
                 i--;
                 this.container.style.height = getComputedStyle(this.container).maxHeight;
-                imgwrapper.style.marginTop = `${-imgwrapper.offsetTop+30}px`
             } else if (node.tagName?.toLowerCase() != 'terminal-line') {
                 node.remove();
                 i--;
@@ -525,8 +527,29 @@ class TerminalAnimation extends HTMLElement {
     hideLines() {
         /**
         * Hide lines inside the terminal
+        * Hide PS1 and Prompt Char for terminal reset
         */
-        this.lines.forEach(line => hide(line));
+        this.lines.forEach(line => {
+            hide(line);
+            let elem = line.shadowRoot?.querySelector('.ps1, .promptChar');
+            if (elem) {
+                hide(elem);
+            }
+        })
+    }
+    
+    showLines() {
+        /**
+        * Show lines inside the terminal
+        * Show PS1 and Prompt Char for terminal reset
+        */
+        this.lines.forEach(line => {
+            show(line);
+            let elem = line.shadowRoot?.querySelector('.ps1, .promptChar');
+            if (elem) {
+                show(elem);
+            }
+        })
     }
 
     generateRestartButton() {
@@ -598,23 +621,38 @@ class TerminalAnimation extends HTMLElement {
         this.generateFastButton();
         this.generateObservers();
         this.resetDelays();
+        this.setImg();
     }
 
-    hidePS1AndPromptChar() {
-        /**
-        * Hides PS1 and Prompt Char for terminal reset
-        */
-        this.lines.forEach(line => {
-            let elem = line.shadowRoot?.querySelector('.ps1, .promptChar');
-            if (elem) {
-                hide(elem);
+    setImg() {
+        if (this.img.img) {
+            // Set img sizes
+            let maxWidth = parseFloat(getComputedStyle(this.container).width) - 65;
+            let maxHeight = parseFloat(getComputedStyle(this.container).maxHeight) - 25;
+            if (this.img.img.width > maxWidth) {
+                this.img.img.width = maxWidth;
             }
-        })
+            if (this.img.img.height > maxHeight) {
+                this.img.img.height = maxHeight;
+            }
+            // Set wrapper height
+            let wrapper = this.img.img.parentElement;
+            wrapper.setAttribute('style', `max-height: unset; --height: ${this.container.scrollHeight}px`);
+        }
     }
 
     hideAll() {
+        if (this.img) {
+            hide(this.img.img);
+        }
         this.hideLines();
-        this.hidePS1AndPromptChar();
+    }   
+
+    showAll() {
+        if (this.img) {
+            show(this.img.img);
+        }
+        this.showLines();
     }   
 
     async initialiseAnimation() {
@@ -626,18 +664,22 @@ class TerminalAnimation extends HTMLElement {
         show(this.fastButton);
         for (let i=0; i<this.lines.length; i++) {
             let line = this.lines[i];
-            if (this.img && (this.img.index == i || i-1 == this.lines.length)) { //Show image if present 
+            //Show image if present 
+            if (this.img && this.img.index == i) {
                 await sleep(this.imageDelay);
                 show(this.img.img);
-                if (this.imageTime || this.imageTime === 0) {
-                    await sleep(this.imageTime);
-                    // hide(this.img.img);
-                }
+                await sleep(this.imageTime);
+                hide(this.img.img);
             }
             // Type line
             line.classList.add('isBeingTyped');
             await line.type();
             line.classList.remove('isBeingTyped');
+            //Show image if it's at the end
+            if (this.img && this.img.index == i+1) {
+                await sleep(this.imageDelay);
+                show(this.img.img);
+            }
         }
         hide(this.fastButton);
         this.resetDelays();
