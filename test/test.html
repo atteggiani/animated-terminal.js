@@ -6,24 +6,27 @@
         <meta name="viewport" content="width=device-width, 
         initial-scale=1.0" />
         <title>Test document</title>
-        <script src="../terminal-animation_component.js" defer></script>
+        <script src="../animated-terminal/animated-terminal.js" defer></script>
     </head>
     <style>
        
     </style>
     <body>
-        <terminal-animation>
-            <terminal-line data="input">this is an input line</terminal-line>
-            <terminal-line data="input" PS1="(User PC)<span style='color: purple;'>$</span> ">this is an input line</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>line after image</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is a prompt line</terminal-line>
-            <terminal-line>line after image</terminal-line>
-            <terminal-line>this is an input line</terminal-line>
-            <terminal-line>this is a prompt line</terminal-line>
-            <!-- <img imageDelay=1000 imageTime=3000 src="Rose GUI 2.png"> -->
-        </terminal-animation>
+        <terminal-window>
+            <terminal-line data="input">mkdir animated-terminal</terminal-line>
+            <terminal-line data="input">cd animated-terminal</terminal-line>
+            <terminal-line data="input" directory="animated-terminal">npm install animated-terminal.js</terminal-line>
+            <terminal-line data="progress"></terminal-line>
+            <terminal-line data="input"></terminal-line>
+            <terminal-line></terminal-line>
+            <terminal-line>Successfully installed animated-terminal.js!!</terminal-line>
+        </terminal-window>
         
+        <terminal-window>
+            <terminal-line data="input">python3</terminal-line>
+            <terminal-line data="prompt">import matplotlib.pyplot as plt</terminal-line>
+            <terminal-line data="prompt">plt.line([1,2,3],[1,2,3])</terminal-line>
+            <img src="Rose GUI 2.png">
+        </terminal-window>
     </body>
 </html>
