@@ -199,7 +199,7 @@ terminalTemplate.innerHTML = `
         }
         
         .img-icon:hover {
-            cursor: pointer;
+            cursor: url('maximise.png'), pointer;
         }
         
         .img-icon:active {
@@ -234,8 +234,7 @@ terminalTemplate.innerHTML = `
         
         .img-wrapper > img:hover {
             border-color: var(--color-control-buttons);
-            /*cursor: pointer;*/
-            cursor: url(minimise.png), pointer;
+            cursor: url('minimise.png'), pointer;
         }
         
         .img-wrapper > img:active {
@@ -288,10 +287,10 @@ class TerminalAnimation extends HTMLElement {
         // Attach shadowDOM
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(terminalTemplate.content.cloneNode(true));
-        // Keep only proper lines
-        this.keepLines();
         // Apply colormode
         this.applyMode();
+        // Keep only proper lines
+        this.keepLines();
         this.DATA_TYPES = ['input','prompt','progress','output'];
         // Wait for terminal-lines to load, then continue
         this.linesReady().then(() => {
@@ -550,11 +549,11 @@ class TerminalAnimation extends HTMLElement {
         this.container.appendChild(imgwrapper);
         imgwrapper.appendChild(node);
         node.setAttribute('part','img');
-        node.setAttribute('title','Click to minimise');
+        node.setAttribute('title','Click to minimise image');
         // Change container height
         const containerStyle = getComputedStyle(this.container);
-        this.container.style.height = containerStyle.maxHeight;
         this.container.setAttribute('style',`--max-height: ${containerStyle.maxHeight};`);
+        this.container.style.height = containerStyle.maxHeight;
     }
 
     async generateAllProgress() {
@@ -679,10 +678,11 @@ class TerminalAnimation extends HTMLElement {
         if (this.img.img) {
             // Create div  and wrapper for image iconisation with sticky behaviour
             let imgIcon = document.createElement('div');
+            this.imgIcon = imgIcon;
             hide(imgIcon);
             imgIcon.innerHTML=`
             <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 524 299" width="2.5em" part="img-icon">
-                <title>img-icon</title>
+                <title>Click to maximise image</title>
                 <style>
                     .s0 {
                         fill: currentColor;
@@ -692,7 +692,6 @@ class TerminalAnimation extends HTMLElement {
             </svg>
             `
             imgIcon.classList.add('img-icon');
-            imgIcon.setAttribute('title','Click to open image');
             let imgIconWrapper = document.createElement('div');
             imgIconWrapper.classList.add('img-icon-wrapper');
             this.container.appendChild(imgIconWrapper);
@@ -734,13 +733,14 @@ class TerminalAnimation extends HTMLElement {
     hideAll() {
         if (this.img) {
             hide(this.img.img);
+            hide(this.imgIcon);
         }
         this.hideLines();
     }   
 
     showAll() {
         if (this.img) {
-            show(this.img.img);
+            show(this.imgIcon);
         }
         this.showLines();
     }   
