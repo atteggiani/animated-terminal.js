@@ -98,6 +98,7 @@ terminalTemplate.innerHTML = `
             scroll-behavior: smooth;
             scrollbar-gutter: stable;
             max-width: 100%;
+            min-width: 150px;
             max-height: 510px;
             margin-top: 15px;
             margin-bottom: 15px;
@@ -199,7 +200,7 @@ terminalTemplate.innerHTML = `
         }
         
         .img-icon:hover {
-            cursor: url('maximise.png'), pointer;
+            cursor: url('../assets/maximise.png'), pointer;
         }
         
         .img-icon:active {
@@ -234,7 +235,7 @@ terminalTemplate.innerHTML = `
         
         .img-wrapper > img:hover {
             border-color: var(--color-control-buttons);
-            cursor: url('minimise.png'), pointer;
+            cursor: url('../assets/minimise.png'), pointer;
         }
         
         .img-wrapper > img:active {
@@ -714,19 +715,28 @@ class TerminalAnimation extends HTMLElement {
 
     setImg() {
         if (this.img.img) {
-            // Set img sizes
-            let maxWidth = parseFloat(getComputedStyle(this.container).width) - 115;
-            let maxHeight = parseFloat(getComputedStyle(this.container).maxHeight) - 25;
-            if (this.img.img.width > maxWidth) {
-                this.img.img.width = maxWidth;
-            }
-            if (this.img.img.height > maxHeight) {
-                let aspectRatio = this.img.img.width/this.img.img.height;
-                this.img.img.width = maxHeight*aspectRatio;
-            }
+            let minWidth = parseFloat(getComputedStyle(this.container).minWidth);
             // Set wrapper height
             let wrapper = this.img.img.parentElement;
             wrapper.setAttribute('style', `max-height: unset; --height: ${this.container.scrollHeight}px`);
+            // Set img sises
+            let aspectRatio = this.img.img.width/this.img.img.height;
+            let maxHeight = parseFloat(getComputedStyle(this.container).maxHeight) - 25;
+            // height
+            if (this.img.img.height > maxHeight) {
+                this.img.img.width = maxHeight*aspectRatio;
+            }
+            let observer = new ResizeObserver(entries => {
+                entries.forEach(entry => {
+                    let width = entry.contentRect.width - 75;
+                    // width
+                    if (width/aspectRatio <= maxHeight && width >= minWidth) {
+                        this.img.img.width = width;
+                    }
+                    
+                })
+            })
+            observer.observe(this.container);
         }
     }
 
