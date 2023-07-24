@@ -1,0 +1,26 @@
+{
+  "name": "animated-terminal.js",
+  "version": "1.0.0",
+  "description": "A customisable animated terminal window using only 2 HTML tags",
+  "main": "animated-terminal.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/atteggiani/animated-terminal.js.git"
+  },
+  "keywords": [
+    "terminal",
+    "animation",
+    "terminal-like",
+    "code",
+    "animated"
+  ],
+  "author": "Davide Marchegiani",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/atteggiani/animated-terminal.js/issues"
+  },
+  "homepage": "https://github.com/atteggiani/animated-terminal.js#readme"
+}
