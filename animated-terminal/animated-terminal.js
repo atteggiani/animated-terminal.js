@@ -164,7 +164,7 @@ terminalTemplate.innerHTML = `
         }
         
         .img-icon:hover {
-            cursor: url('../assets/maximise.png'), pointer;
+            cursor: pointer;
         }
         
         .img-icon:active {
@@ -182,7 +182,6 @@ terminalTemplate.innerHTML = `
         .img-wrapper {
             position: absolute;
             width: fit-content;
-            max-height: calc(var(--max-height) - 20px);
             height: var(--height);
             top: 0px;
             margin-top: 0px;
@@ -190,6 +189,7 @@ terminalTemplate.innerHTML = `
         
         .img-wrapper > img {
             position: sticky;
+            max-height: calc(var(--max-height) - 20px);
             margin-left: -15px;
             top: -20px;
             border-radius: 7px;
@@ -199,7 +199,7 @@ terminalTemplate.innerHTML = `
         
         .img-wrapper > img:hover {
             border-color: var(--color-control-buttons);
-            cursor: url('../assets/minimise.png'), pointer;
+            cursor: pointer;
         }
         
         .img-wrapper > img:active {
