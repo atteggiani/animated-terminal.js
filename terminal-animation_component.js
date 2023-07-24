@@ -39,6 +39,8 @@
  * - Directory -> ::part(directory)
  * - Input Character(s) -> ::part(input-character)
  * - Prompt Character(s) -> ::part(prompt-character)
+ * - Image -> ::part(img)
+ * - Image Icon -> ::part(img-icon)
 */
 'use strict';
 
@@ -108,7 +110,7 @@ terminalTemplate.innerHTML = `
             font-family: 'Roboto Mono', 'Fira Mono', Consolas, Menlo, Monaco, 'Courier New', Courier, monospace;
             font-weight: bold;
             border-radius: 8px;
-            padding: 30px 25px 22px;
+            padding: 30px 25px 25px;
             position: relative;
             overflow-y: auto;
             overflow-x: hidden;
@@ -130,24 +132,14 @@ terminalTemplate.innerHTML = `
             -webkit-box-shadow: 0px 0 0 #d9515d, 25px 0 0 #f4c025, 50px 0 0 #3ec930;
                     box-shadow: 0px 0 0 #d9515d, 25px 0 0 #f4c025, 50px 0 0 #3ec930;
         }
-        
+
         .fast-button-wrapper {
             position: sticky;
             top: 0px;
-            z-index: 1;
+            z-index: 2;
         }
         
         .fast-button-wrapper:hover {
-            cursor: pointer;
-        }
-        
-        .restart-button-wrapper {
-            position: sticky;
-            top: var(--top);
-            z-index: 1;
-        }
-        
-        .restart-button-wrapper:hover {
             cursor: pointer;
         }
         
@@ -163,25 +155,69 @@ terminalTemplate.innerHTML = `
         .fast-button:hover {
             color: var(--color-control-buttons-hover);
         }
+
+        .restart-button-wrapper {
+            position: sticky;
+            top: var(--top);
+            z-index: 2;
+        }
         
+        .restart-button-wrapper:hover {
+            cursor: pointer;
+        }
+
         .restart-button {
             position: absolute;
             color: var(--color-control-buttons);
             width: max-content;
             text-align: center;
-            top: var(--top);
+            top: 0px;
             right: var(--right);
         }
 
         .restart-button:hover {
             color: var(--color-control-buttons-hover);
-        
         }
         
+        .restart-button:active {
+            cursor: default;
+        }
+        
+        .img-icon-wrapper {
+            position: absolute;
+            height: var(--height);
+            top: 0px;
+            margin-top: 0px;
+            right: 90px;
+            z-index: 0;
+        }
+        
+        .img-icon {
+            position: sticky;
+            top: var(--top);
+            text-align: center;
+        }
+        
+        .img-icon:hover {
+            cursor: pointer;
+        }
+        
+        .img-icon:active {
+            cursor: default;
+        }
+
+        .img-icon > svg {
+            color: var(--color-control-buttons);
+        }
+        
+        .img-icon > svg:hover {
+            color: var(--color-control-buttons-hover);
+        }
+
         .img-wrapper {
             position: absolute;
             width: fit-content;
-            max-height: 490px;
+            max-height: calc(var(--max-height) - 20px);
             height: var(--height);
             top: 0px;
             margin-top: 0px;
@@ -193,12 +229,17 @@ terminalTemplate.innerHTML = `
             top: -20px;
             border-radius: 7px;
             border: solid 2px transparent;
-            z-index: 0;
+            z-index: 1;
         }
         
         .img-wrapper > img:hover {
             border-color: var(--color-control-buttons);
-            cursor: pointer;
+            /*cursor: pointer;*/
+            cursor: url(minimise.png), pointer;
+        }
+        
+        .img-wrapper > img:active {
+            cursor: default;
         }
         
     </style>
@@ -223,8 +264,8 @@ class TerminalAnimation extends HTMLElement {
     * @param {number || string} typingDelay - Delay between each typed character in the terminal, in ms.
     * @param {number || string} imageDelay - Delay before the content inside <img> gets shown, in ms 
     *   (similar to lineDelay, but for <img> tags).
-    * @param {number || string} imageTime - Amount of time for an image to stay opened before being iconified, in ms. 
-    *   If not present, the image will stay open (You will still be able to click on it to iconify).  
+    * @param {number || string} imageTime - Amount of time for an image to stay opened before being minimised, in ms. 
+    *   If not present, the image will stay open (You will still be able to click on it to minimise).  
     * @param {string} progressChar – Character(s) to use for progress bar for the entire terminal, defaults to █.
     * @param {number || string} progressPercent - Max percent of progress for the entire terminal, default 100%.
     * @param {string} cursor – Character to use for cursor for the entire terminal, defaults to ▋.
@@ -263,6 +304,7 @@ class TerminalAnimation extends HTMLElement {
                 }
             } else {
                 this.setImg();
+                this.generateImgIconiser();
                 this.generateAllProgress();
                 this.showAll();
             }
@@ -491,20 +533,28 @@ class TerminalAnimation extends HTMLElement {
                     img: node,
                     index: i,
                 }
-                let imgwrapper=document.createElement('div');
-                imgwrapper.classList.add('img-wrapper');
-                this.container.appendChild(imgwrapper);
-                imgwrapper.appendChild(node);
-                node.setAttribute('part','img');
-                imgwrapper.setAttribute('part','wrapper');
+                this.generateImg(node);
                 i--;
-                this.container.style.height = getComputedStyle(this.container).maxHeight;
             } else if (node.tagName?.toLowerCase() != 'terminal-line') {
                 node.remove();
                 i--;
             }
         }
         this.lines = this.childNodes;
+    }
+
+    generateImg(node) {
+        // Create img wrapper for sticky behaviour
+        let imgwrapper = document.createElement('div');
+        imgwrapper.classList.add('img-wrapper');
+        this.container.appendChild(imgwrapper);
+        imgwrapper.appendChild(node);
+        node.setAttribute('part','img');
+        node.setAttribute('title','Click to minimise');
+        // Change container height
+        const containerStyle = getComputedStyle(this.container);
+        this.container.style.height = containerStyle.maxHeight;
+        this.container.setAttribute('style',`--max-height: ${containerStyle.maxHeight};`);
     }
 
     async generateAllProgress() {
@@ -577,7 +627,7 @@ class TerminalAnimation extends HTMLElement {
         this.container.prepend(wrapper);
         const containerStyle = getComputedStyle(this.container);
         wrapper.setAttribute("style",`--top: ${parseFloat(containerStyle.height) - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom)}px;`);
-        restart.setAttribute("style",`--top: -14px; --right: -15px;`);
+        restart.setAttribute("style",`--right: -15px;`);
         hide(restart);
     }
 
@@ -622,18 +672,58 @@ class TerminalAnimation extends HTMLElement {
         this.generateObservers();
         this.resetDelays();
         this.setImg();
+        this.generateImgIconiser();
+    }
+
+    generateImgIconiser() {
+        if (this.img.img) {
+            // Create div  and wrapper for image iconisation with sticky behaviour
+            let imgIcon = document.createElement('div');
+            hide(imgIcon);
+            imgIcon.innerHTML=`
+            <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 524 299" width="2.5em" part="img-icon">
+                <title>img-icon</title>
+                <style>
+                    .s0 {
+                        fill: currentColor;
+                    } 
+                </style>
+                <path id="Layer" fill-rule="evenodd" class="s0" d="m53 0h385.6l15 15 55.4 55.4 15 15v183.6c0 16.6-13.4 30-30 30h-441c-16.6 0-30-13.4-30-30v-120h-8c-8.3 0-15-6.7-15-15v-64c0-8.3 6.7-15 15-15h8v-25c0-16.6 13.4-30 30-30zm0 284h441c8.3 0 15-6.7 15-15v-177h-58c-11 0-20-9-20-20v-57h-378c-8.3 0-15 6.7-15 15v25h148c8.3 0 15 6.7 15 15v64c0 8.3-6.7 15-15 15h-148v120c0 8.3 6.7 15 15 15zm59.3-159.7q-0.1-1.5-0.1-2.8 0-6.1-0.1-12.7v-12.7q0-5-0.1-10 0-5 0-10.1 0-0.6-0.1-1.1 0-0.5-0.1-1.2-0.1-0.8-0.5-2-0.3-0.8-1.1-1.5-1-0.9-2.1-1-0.5-0.1-1.1-0.1-0.5-0.1-1.2-0.1-1.5 0-3 1.1-1.3 1-2.6 2.4-1.3 1.5-2.3 3-1 1.6-1.6 2.7-1.6 2.4-2.8 4.3-1.1 1.9-2.2 3.6-1 1.5-1.9 3-0.9 1.3-1.8 2.8-0.2 0.3-0.5 0.9-0.3 0.5-0.8 1.2l-0.7 1q-0.4 0.5-0.6 0.8-1.7-2.3-3.6-5.5-1.8-3.2-4.2-7-0.5-0.9-1.3-2-0.7-1.2-1.5-2.5-0.8-1.3-1.7-2.4-0.8-1.2-1.5-2-1.2-1.3-2.6-3-1.2-1.9-3.1-2.2-0.5-0.1-1.1-0.1-0.6-0.1-1.2-0.1-1.6 0-2.9 0.8-1.2 0.7-2 2.2-0.3 0.8-0.6 1.7-0.2 0.8-0.2 1.8-0.5 7.7-0.5 15.6v12.1l-0.1 14-0.1 7.1v2.4q0.1 1.2 0.2 2.5 0.2 1.1 0.7 2.5 0.6 1.4 1.8 2.1 1.9 1 3.6 0.9 1.6-0.1 2.8-0.9 1.3-0.8 2-2.1 0.7-1.4 0.7-2.9 0.1 0 0.2-2.8 0.1-2.9 0.1-7.2 0.1-4.2 0.1-9.1 0.1-5 0.1-9.3v-7.3q0.1-2.9 0.1-3 2.9 5.5 5.6 9.3 2.8 3.8 5 6.5 0.3 0.6 0.9 1.2l1.3 1.1q0.7 0.5 1.4 0.9 0.7 0.4 1.5 0.3 1.3-0.1 2.4-0.7 1.2-0.8 2.8-2.7 1.6-2 3.9-5.5 2.4-3.6 5.9-9.5 0.2 3 0.1 3.7v3.4q0.1 0.8 0.1 1.6v3.7l0.1 13.9v9.6q0 1.4 0.3 2.6 0.2 1.3 0.8 2.5 0.6 1.1 1.9 1.9 1 0.4 2.2 0.6 1.2 0.2 2.5-0.3 1.3 0 2.3-1 0.8-0.5 1.2-1.6 0.5-1 0.6-2.2 0.2-1.1 0.3-2.2 0.1-1.5 0-2.9zm-83.3 1.1q0 0.9 0 1.6 0.1 0.4 0.1 0.9l0.2 0.9q0 0.5 0.1 1.1 0.1 0.4 0.3 0.9 0.1 0.2 0.2 0.3 0.1 0.1 0.1 0.2 0 0.3 0.3 0.6 0.5 1.1 1.6 1.8 2.2 1 4.6 0.5 1.7-0.3 2.4-1 0.4-0.4 0.7-0.8 0.4-0.4 0.7-0.9 0.1-0.5 0.2-1 0.2-0.5 0.4-1 0.1-0.5 0.1-0.9 0.1-0.4 0.1-0.7v-0.9l0.5-47.1v-2.6q0.1-0.5 0.1-1.1 0-0.6-0.1-1.1 0-0.6-0.1-1.2-0.1-0.5-0.2-1-0.1-0.5-0.3-1.1-0.5-1-1-1.4-0.9-0.9-2.1-1.1-0.6-0.1-1.2-0.1-0.5-0.1-1.3-0.1-1.3 0-2.8 0.7-1.3 0.9-1.9 2.2-0.9 1.9-1 3.5 0 1-0.1 2 0 0.9-0.1 1.8v0.4q-0.2 3.2-0.2 5.7v12.2q0 3.1-0.1 6l-0.1 13.3-0.1 7.2zm143.7-7.8q0.3-2.8 0.3-5.6v-3.7q0-0.4-0.1-1 0-0.6-0.1-1.2-0.1-1-0.4-2-0.2-0.4-0.5-0.8l-0.5-0.7q-0.8-0.6-2.1-0.9-1.3-0.4-2.3-0.3h-9.6q-0.6 0-1.2 0.1-0.7 0.1-1.3 0.3-0.5 0.1-1 0.3-1.2 0.2-1.8 0.7-0.9 1.1-1.2 1.8l-0.1 1.1v1q0 1.4 0.9 2.4 0.8 1.2 2.4 1.8 1.9 0.7 3.9 0.7 0.5 0 1.4 0.1h2.1v0.1q0 1.9-0.4 3.6-0.2 1.7-1.1 3.2-1 1.4-2.5 2.5-1.6 1-4 1.6-1.7 0.5-3.7 0.3-1.9-0.2-3.6-0.8-1.7-0.7-3.2-1.8-1.4-1.2-2.2-2.6-2.1-3.9-3.1-8.4-0.5-2.6-0.7-5.4-0.1-2.9 0.3-5.8 0.3-2.9 1.1-5.5 0.9-2.7 2.4-5 1.3-2 3.2-3.5 2-1.6 4.2-2.3 2.3-0.7 4.6-0.5 2.5 0.2 4.7 1.5 1.9 1.2 2.8 3 0.9 1.7 1.6 3.8 0.5 1.9 2.1 3.2 1.6 1.2 3.3 1.4 1.8 0.2 3.2-0.8 1.5-1.1 2-3.8 0.5-3.1-0.3-6.4-0.8-3.4-2.3-5.7-2.1-3.2-5.7-5.1-3.6-1.9-7.8-2.7-4.1-0.7-8.4-0.2-4.2 0.3-7.7 1.8-3.9 1.5-6.7 4.5-2.7 3-4.6 6.7-1.9 3.8-2.9 7.8-0.9 3.9-1.2 7.4-0.4 5.8 0.3 12.2 0.8 6.4 3.5 11.8 2.7 5.5 7.7 9.2 5.1 3.6 13.3 3.9 1.8 0.1 3.8-0.1 2-0.1 4-0.5 2.1-0.4 3.9-0.9 1.9-0.7 3.3-1.6 2.8-1.7 4.5-4 1.6-2.3 2.4-4.9 0.9-2.6 1.1-5.3zm77.3-10.1c0-13.5 10.8-24.3 24.2-24.3 13.5 0 24.3 10.8 24.3 24.3 0 13.4-10.8 24.2-24.3 24.2-13.4 0-24.2-10.8-24.2-24.2zm195.6 129.1c2 3.4-0.4 7.6-4.3 7.6h-215.6c-3.9 0-6.3-4.2-4.3-7.6l42.6-71.7c2-3.3 6.7-3.3 8.6 0l33.8 56.9 60.9-102.3c1.9-3.2 6.7-3.2 8.6 0z"/>
+            </svg>
+            `
+            imgIcon.classList.add('img-icon');
+            imgIcon.setAttribute('title','Click to open image');
+            let imgIconWrapper = document.createElement('div');
+            imgIconWrapper.classList.add('img-icon-wrapper');
+            this.container.appendChild(imgIconWrapper);
+            imgIconWrapper.appendChild(imgIcon);
+            // Set wrapper height and top
+            const containerStyle = getComputedStyle(this.container);
+            imgIconWrapper.setAttribute('style', `--height: ${this.container.scrollHeight}px; --top: ${parseFloat(containerStyle.height) - parseFloat(containerStyle.paddingTop) - parseFloat(containerStyle.paddingBottom)}px;`);
+            const iconiseImg = (e) => {
+                hide(this.img.img);
+                show(imgIcon);
+            }
+            const openImg = (e) => {
+                show(this.img.img);
+                hide(imgIcon);
+            }
+            this.img.img.addEventListener("click", iconiseImg, {passive: true})
+            imgIcon.addEventListener("click", openImg, {passive: true})
+        }
     }
 
     setImg() {
         if (this.img.img) {
             // Set img sizes
-            let maxWidth = parseFloat(getComputedStyle(this.container).width) - 65;
+            let maxWidth = parseFloat(getComputedStyle(this.container).width) - 115;
             let maxHeight = parseFloat(getComputedStyle(this.container).maxHeight) - 25;
             if (this.img.img.width > maxWidth) {
                 this.img.img.width = maxWidth;
             }
             if (this.img.img.height > maxHeight) {
-                this.img.img.height = maxHeight;
+                let aspectRatio = this.img.img.width/this.img.img.height;
+                this.img.img.width = maxHeight*aspectRatio;
             }
             // Set wrapper height
             let wrapper = this.img.img.parentElement;
