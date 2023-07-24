@@ -676,7 +676,7 @@ class TerminalAnimation extends HTMLElement {
     }
 
     generateImgIconiser() {
-        if (this.img.img) {
+        if (this.img) {
             // Create div  and wrapper for image iconisation with sticky behaviour
             let imgIcon = document.createElement('div');
             this.imgIcon = imgIcon;
@@ -714,7 +714,7 @@ class TerminalAnimation extends HTMLElement {
     }
 
     setImg() {
-        if (this.img.img) {
+        if (this.img) {
             let minWidth = parseFloat(getComputedStyle(this.container).minWidth);
             // Set wrapper height
             let wrapper = this.img.img.parentElement;
