@@ -94,8 +94,8 @@ terminalTemplate.innerHTML = `
             border-radius: 50%;
             /* A little hack to display the window buttons in one pseudo element. */
             background-color: #d9515d;
-            -webkit-box-shadow: 0px 0 0 #d9515d, 25px 0 0 #f4c025, 50px 0 0 #3ec930;
-                    box-shadow: 0px 0 0 #d9515d, 25px 0 0 #f4c025, 50px 0 0 #3ec930;
+            -webkit-box-shadow: 0px 0 0 #d9515d, 20px 0 0 #f4c025, 40px 0 0 #3ec930;
+                    box-shadow: 0px 0 0 #d9515d, 20px 0 0 #f4c025, 40px 0 0 #3ec930;
         }
 
         .fast-button-wrapper {
@@ -144,10 +144,6 @@ terminalTemplate.innerHTML = `
             color: var(--color-control-buttons-hover);
         }
         
-        .restart-button:active {
-            cursor: default;
-        }
-        
         .img-icon-wrapper {
             position: absolute;
             height: var(--height);
@@ -167,10 +163,6 @@ terminalTemplate.innerHTML = `
             cursor: pointer;
         }
         
-        .img-icon:active {
-            cursor: default;
-        }
-
         .img-icon > svg {
             color: var(--color-control-buttons);
         }
@@ -207,10 +199,11 @@ terminalTemplate.innerHTML = `
         }
         
     </style>
-
-    <div class='terminal-window' part="terminal-window" tabindex=-1>
-        <slot></slot>
-    </div>
+    <body>
+        <div class='terminal-window' part="terminal-window" tabindex=-1>
+            <slot></slot>
+        </div>
+    </body>
 `
 /* terminal-window component */
 class TerminalWindow extends HTMLElement {
@@ -247,15 +240,13 @@ class TerminalWindow extends HTMLElement {
     */
     constructor() {
         super();
-        // Hide all elements (lines and img)
-        this.querySelectorAll('*').forEach(elem=>elem.style.visibility = 'hidden')
         // Attach shadowDOM
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(terminalTemplate.content.cloneNode(true));
-        // Apply colormode
-        this.applyMode();
         // Keep only proper lines
         this.keepLines();
+        // Apply colormode
+        this.applyMode();
         this.DATA_TYPES = ['input','prompt','progress','output'];
         // Wait for terminal-lines to load, then continue
         this.linesReady().then(() => {
@@ -268,7 +259,7 @@ class TerminalWindow extends HTMLElement {
                 }
             } else {
                 this.setImg();
-                this.generateImgIconiser();
+                this.generateImgMinimiser();
                 this.generateAllProgress();
                 this.showAll();
             }
@@ -340,9 +331,9 @@ class TerminalWindow extends HTMLElement {
         * Resets lineDelay property.
         */
         if (this.img && this.img.img.hasAttribute('imageTime')) {
-            this.imageTime = parseFloat(this.img.img.getAttribute('imageTime'));
+            this.imageTime = parseFloat(this.img.img.getAttribute('imageTime')) ? parseFloat(this.img.img.getAttribute('imageTime')) : this.img.img.getAttribute('imageTime');
         } else if (this.hasAttribute('imageTime')) {
-            this.imageTime = parseFloat(this.getAttribute('imageTime'));
+            this.imageTime = parseFloat(this.getAttribute('imageTime')) ? parseFloat(this.getAttribute('imageTime')) : this.img.img.getAttribute('imageTime');
         } else {
             this.imageTime = 3000;
         }
@@ -502,6 +493,8 @@ class TerminalWindow extends HTMLElement {
             } else if (node.tagName?.toLowerCase() != 'terminal-line') {
                 node.remove();
                 i--;
+            } else {
+                hide(node);
             }
         }
         this.lines = this.childNodes;
@@ -509,6 +502,7 @@ class TerminalWindow extends HTMLElement {
 
     generateImg(node) {
         // Create img wrapper for sticky behaviour
+        hide(node);
         let imgwrapper = document.createElement('div');
         imgwrapper.classList.add('img-wrapper');
         this.window.appendChild(imgwrapper);
@@ -635,15 +629,23 @@ class TerminalWindow extends HTMLElement {
         this.generateObservers();
         this.resetDelays();
         this.setImg();
-        this.generateImgIconiser();
+        this.generateImgMinimiser();
+        this.setWindow();
     }
 
-    generateImgIconiser() {
+    setWindow() {
+       /**
+        * Sets terminal window height
+        */ 
+       this.window.style.height = getComputedStyle(this.window).height;
+    }
+
+    generateImgMinimiser() {
         if (this.img) {
             // Create div  and wrapper for image iconisation with sticky behaviour
             let imgIcon = document.createElement('div');
-            this.imgIcon = imgIcon;
             hide(imgIcon);
+            this.imgIcon = imgIcon;
             imgIcon.innerHTML=`
             <svg version="1.2" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 524 299" width="2.5em" part="img-icon">
                 <title>Click to maximise image</title>
@@ -663,17 +665,19 @@ class TerminalWindow extends HTMLElement {
             // Set wrapper height and top
             const windowStyle = getComputedStyle(this.window);
             imgIconWrapper.setAttribute('style', `--height: ${this.window.scrollHeight}px; --top: ${parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom)}px;`);
-            const iconiseImg = (e) => {
-                hide(this.img.img);
-                show(imgIcon);
-            }
-            const openImg = (e) => {
-                show(this.img.img);
-                hide(imgIcon);
-            }
-            this.img.img.addEventListener("click", iconiseImg, {passive: true})
-            imgIcon.addEventListener("click", openImg, {passive: true})
+            this.img.img.addEventListener("click", this.minimiseImg.bind(this), {passive: true})
+            imgIcon.addEventListener("click", this.maximiseImg.bind(this), {passive: true})
         }
+    }
+
+    minimiseImg(e) {
+        hide(this.img.img);
+        show(this.imgIcon);
+    }
+    
+    maximiseImg(e) {
+        show(this.img.img);
+        hide(this.imgIcon);
     }
 
     setImg() {
@@ -729,10 +733,7 @@ class TerminalWindow extends HTMLElement {
             let line = this.lines[i];
             //Show image if present 
             if (this.img && this.img.index == i) {
-                await sleep(this.imageDelay);
-                show(this.img.img);
-                await sleep(this.imageTime);
-                hide(this.img.img);
+                await this.showImage();
             }
             // Type line
             line.classList.add('isBeingTyped');
@@ -740,13 +741,23 @@ class TerminalWindow extends HTMLElement {
             line.classList.remove('isBeingTyped');
             //Show image if it's at the end
             if (this.img && this.img.index == i+1) {
-                await sleep(this.imageDelay);
-                show(this.img.img);
+                await this.showImage();
             }
         }
         hide(this.fastButton);
         this.resetDelays();
         show(this.restartButton);
+    }
+
+    async showImage() {
+        if (this.imageTime != 0) {
+            await sleep(this.imageDelay);
+            this.maximiseImg();(this.img.img);
+        }
+        if (this.imageTime != 'inf') {
+            await sleep(this.imageTime);
+            this.minimiseImg();
+        }
     }
 
     initialiseWhenVisible() {
@@ -762,7 +773,7 @@ class TerminalWindow extends HTMLElement {
             })
         },
         {
-            rootMargin: "-50px",
+            threshold: "0.3",
         })
         observer.observe(this);
     }
@@ -897,10 +908,29 @@ lineTemplate.innerHTML = `
         span.inputChar {
             color: var(--color-text-inputchar);
         }
+        
+        [cursor]::after {
+            content: attr(cursor);
+            font-family: monospace;
+            -webkit-animation: blink 1s infinite;
+                    animation: blink 1s infinite;
+        }
+        
+        @-webkit-keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
+
+        @keyframes blink {
+            50% {
+                opacity: 0;
+            }
+        }
     </style>
     
     <body>
-        <div class='terminal-line'><slot></slot></div>
+        <div class='terminal-line' part="terminal-line"><slot></slot></div>
     </body>
     
 `
@@ -929,10 +959,8 @@ class TerminalLine extends HTMLElement {
         super();
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(lineTemplate.content.cloneNode(true));
-        console.log(this.shadowRoot)
         this.ALLOWED_NODES = ["span"];
         this.line = this.shadowRoot.querySelector(".terminal-line");
-        this.setCursorChar();
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
         this.resetDelays();
@@ -1078,31 +1106,6 @@ class TerminalLine extends HTMLElement {
         }
     }
 
-    setCursorChar() {
-        const style = document.createElement('style');
-        style.innerHTML=`
-            .cursor::after {
-                content: '${this.cursor}';
-                font-family: monospace;
-                -webkit-animation: blink 1s infinite;
-                        animation: blink 1s infinite;
-            }
-            
-            @-webkit-keyframes blink {
-                50% {
-                    opacity: 0;
-                }
-            }
-    
-            @keyframes blink {
-                50% {
-                    opacity: 0;
-                }
-            }
-        `
-        this.shadowRoot.appendChild(style);
-    }
-
     keepNodes(elementList=this.ALLOWED_NODES) {
         /*
         * Delete all line nodes whose tags are not within the elementList, 
@@ -1213,11 +1216,11 @@ class TerminalLine extends HTMLElement {
     }
 
     addCursor() {
-        this.line.classList.add('cursor');
+        this.line.setAttribute("cursor", `${this.cursor}`)
     }
     
     removeCursor() {
-        this.line.classList.remove('cursor');
+        this.line.removeAttribute('cursor');
     }
 
     generatePS1AndPromptCharElements() {
