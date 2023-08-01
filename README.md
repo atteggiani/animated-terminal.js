@@ -45,11 +45,11 @@ will be rendered as:
 
 ### Default features
 - Fast/Restart buttons to control the animation flow.<br>
-![example fast/restart](README_assets/example_fast_restart.gif)<br>
+![example fast/restart](README_assets/example_fast_restart.gif)<br><br>
 - Style single words inside a `<terminal-line>` by wrapping them in a `<span>` tag and apply the desired styles.<br>
-![example span](README_assets/example_span.gif)<br>
+![example span](README_assets/example_span.gif)<br><br>
 - If the content of a `<terminal-window>` is too long, the `<terminal-window>` will become scrollable, with automatic scroll enabled while the animation is running.<br>
-![example scroll](README_assets/example_scroll.gif)<br>
+![example scroll](README_assets/example_scroll.gif)<br><br>
 - The animation starts only when the terminal is in the viewport (check the *init* attribute to change this feature).<br>
 ### Terminal *data* types
 There are currently 4 *data* attributes you can assign to define a `<terminal-line>` or a `<terminal-window>`:
