@@ -20,5 +20,5 @@
     "url": "https://github.com/atteggiani/animated-terminal.js/issues"
   },
   "homepage": "https://github.com/atteggiani/animated-terminal.js#readme",
-  "postpublish": "git tag v$(grep -Po '^\\s*\\\"version\\\":\\s*\\\"\\K.*(?=\\\")' package.json) && git push --tags"
+  "postpublish": "git tag $(grep -Po '^\\s*\\\"version\\\":\\s*\\\"\\K.*(?=\\\")' package.json) && git push --tags"
 }
