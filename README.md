@@ -1,4 +1,4 @@
-# animated-terminal.js: A customisable animated terminal window using only 2 HTML tags
+# animated-terminal.js:<br>A customisable animated terminal window using only 2 HTML tags
 
 - Render an animated terminal window using only 2 HTML tags
 - Lightweight, quick to install and easy to use
@@ -12,11 +12,16 @@ It uses **promises** and **async**/**await**, all in **vanilla Javascript**, so 
 
 **animated-terminal.js** was initially inspired by [github.com/ines/termynal](github.com/ines/termynal). Then, since I needed some added features, I ended up creating my own improved implementation of the terminal, based on 2 main JavaScript components exported as HTML tags: `<terminal-window>` and `<terminal-line>`.
 
-![showcase 1](../README_assets/showcase_1.gif)
+![showcase 1](README_assets/showcase_1.gif)
 
-![showcase 2](../README_assets/showcase_2.gif)
+![showcase 2](README_assets/showcase_2.gif)
 
 ## How to install
+Include **animated-terminal.js** in your project from a CDN, using the `<script>` tag.
+
+```html
+<script src="https://cdn.jsdelivr.net/gh/atteggiani/animated-terminal/animated-terminal.min.js"></script>
+```
 
 ## Usage
 
@@ -36,27 +41,25 @@ Example:
 ```
 will be rendered as:
 
-![example 1](../README_assets/example_1.gif)
+![example 1](README_assets/example_1.gif)
 
 ### Default features
 - Fast/Restart buttons to control the animation flow.<br>
-![example fast/restart](../README_assets/example_fast_restart.gif)
+![example fast/restart](README_assets/example_fast_restart.gif)<br>
 - Style single words inside a `<terminal-line>` by wrapping them in a `<span>` tag and apply the desired styles.<br>
-![example span](../README_assets/example_span.gif) 
-- The animation starts only when the terminal is in the viewport (check the *init* attribute to change this feature).<br>
-![example init](../README_assets/example_init.gif)
+![example span](README_assets/example_span.gif)<br>
 - If the content of a `<terminal-window>` is too long, the `<terminal-window>` will become scrollable, with automatic scroll enabled while the animation is running.<br>
-![example scroll](../README_assets/example_scroll.gif)<br>
-(Note: The `<terminal-window>`'s *max-height* in this example was purposely reduced to show the scroll effect.)
+![example scroll](README_assets/example_scroll.gif)<br>
+- The animation starts only when the terminal is in the viewport (check the *init* attribute to change this feature).<br>
 ### Terminal *data* types
 There are currently 4 *data* attributes you can assign to define a `<terminal-line>` or a `<terminal-window>`:
 
 | *data* |  Description |
 | --- | --- |
-|**output** | An output terminal line. Gets printed out all at once (default option).|
-|**input** | An input terminal line. It is preceded by an input character of a different color from the main text. It is typed letter by letter with a cursor animation.|
-|**prompt** | A prompt terminal line. It is preceded by a prompt character of the same color as the main text. It is typed letter by letter with a cursor animation. |
-|**progress** | A line showing the loading of a progress bar.|
+|'**output**' | An output terminal line. Gets printed out all at once (default option).|
+|'**input**' | An input terminal line. It is preceded by an input character of a different color from the main text. It is typed letter by letter with a cursor animation.|
+|'**prompt**' | A prompt terminal line. It is preceded by a prompt character of the same color as the main text. It is typed letter by letter with a cursor animation. |
+|'**progress**' | A line showing the loading of a progress bar.|
 ---
 <br>
 
@@ -73,7 +76,7 @@ Example:
 
 will be rendered as:
 
-![example 2](../README_assets/example_2.gif)
+![example 2](README_assets/example_2.gif)
 
 ### Terminal customisation
 
@@ -85,7 +88,7 @@ If the same attribute is specified for both the `<terminal-window>` and `<termin
 
 #### `<terminal-window>` attributes
 
-| Attribute | Options or type(s) [Default] | Description |
+| Attribute | Options or *type(s)* [Default] | Description |
 | --- | --- | --- |
 | mode | ['dark'], 'light' | Defines the main terminal colorscheme. | 
 | data | ['output'], 'input', 'prompt', 'progress'| Terminal data type for each line in the entire terminal. |
@@ -108,7 +111,7 @@ If the same attribute is specified for both the `<terminal-window>` and `<termin
 
 #### `<terminal-line>` attributes
 
-| Attribute | Options or type(s) [Default] | Description |
+| Attribute | Options or *type(s)* [Default] | Description |
 | --- | --- | --- |
 | data | ['output'], 'input', 'prompt', 'progress'| Terminal data type for current line. |
 | lineDelay | *str*, *int*, [600] ('input' / 'prompt' lines), [100] ('output' / 'progress' lines) | Delay before the start of current line animation, in milliseconds. |
@@ -120,19 +123,21 @@ If the same attribute is specified for both the `<terminal-window>` and `<termin
 | promptChar | *str*, ['>>>'] | Character(s) to use before the current 'prompt' line. |
 | directory | *str* | Directory path to insert before the *inputChar* in the current 'input' line. |
 | PS1 | *str*, *HTML* | String to insert before the current 'input' line. It entirely replaces both *directory* and *inputChar*. Can be formatted as HTML code to include styling.|
-
+<br>
 
 ### Image / Video / GIF
 
 Inside the `<terminal-window>` wrapper, **one** `<img>` tag can be inserted (**note:** any further `<img>` tags will be automatically removed) to show an image, video or GIF.
 
-The `<img>` tag content will be shown as an overlay inside the terminal window (which is max-sized automatically) with the animation following the position of the `<img>` tag with respect to the other `<terminal-line>` tags in the `<terminal-window>`.
+The `<img>` tag content will be shown as an overlay inside the terminal window (whose height will be automatically set to max-height) with the animation following the position of the `<img>` tag with respect to the other `<terminal-line>` tags in the `<terminal-window>`.
 
-The `<img>` tag content, once shown, can be manually minimised by clicking on it. It can then be maximised again by clicking on the *IMG* icon at the bottom right of the terminal.
+The `<img>` tag content, once shown, can be manually minimised by clicking on it.
+<br>
+It can then be maximised again by clicking on the *IMG* icon at the bottom right of the terminal.
 
 The `<img>` tag can have the following attributes:
 
-| Attribute | Options or type(s) [Default] | Description |
+| Attribute | Options or *type(s)* [Default] | Description |
 | --- | --- | --- |
 | imageDelay | *str*, *int*, [1500] | Delay before the `<img>` content gets shown, in milliseconds. |
 | imageTime | *str*, *int*, 'inf', [3000] | Amount of time for the `<img>` content to be shown before being minimised, in milliseconds. 'inf' will keep the image maximised unless manually minimised. |
@@ -148,19 +153,19 @@ Example:
 ```
 will be rendered as:
 
-![example img](../README_assets/example_img.gif)
+![example img](README_assets/example_img.gif)
 
 ## Edit components' elements using *::part()*
 Some sub-elements of the `<terminal-window>` and `<terminal-line>` components are editable using the CSS pseudo-element `::part`:
 | Sub-element | ::part sintax |
 |---|---|
-| Terminal Window | `::part(terminal-window)` |
-| Terminal Line | `::part(terminal-line)` |
-| Fast Button | `::part(fast-button)` |
-| Restart Button | `::part(restart-button)` |
+| Terminal window | `::part(terminal-window)` |
+| Terminal line | `::part(terminal-line)` |
+| Fast button | `::part(fast-button)` |
+| Restart button | `::part(restart-button)` |
 | Directory | `::part(directory)`|
-| Input Character(s) | `::part(input-character)` |
-| Prompt Character(s) | `::part(prompt-character)` |
+| Input character(s) | `::part(input-character)` |
+| Prompt character(s) | `::part(prompt-character)` |
 | Image | `::part(img)`|
-| Image Icon | `::part(img-icon)` |
+| Image minimised icon | `::part(img-icon)` |
 
