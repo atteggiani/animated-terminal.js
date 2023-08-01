@@ -1,6 +1,6 @@
 {
   "name": "animated-terminal.js",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "A customisable animated terminal window using only 2 HTML tags",
   "main": "animated-terminal.js",
   "repository": {
