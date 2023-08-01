@@ -60,8 +60,6 @@ There are currently 4 *data* attributes you can assign to define a `<terminal-li
 |'**input**' | An input terminal line. It is preceded by an input character of a different color from the main text. It is typed letter by letter with a cursor animation.|
 |'**prompt**' | A prompt terminal line. It is preceded by a prompt character of the same color as the main text. It is typed letter by letter with a cursor animation. |
 |'**progress**' | A line showing the loading of a progress bar.|
----
-<br>
 
 Example:
 
