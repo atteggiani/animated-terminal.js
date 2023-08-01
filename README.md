@@ -6,7 +6,7 @@
 - No additional JavaScript libraries needed
 - Multiple functionalities and customisations
 
-**animated-terminal.js** lets you render an animated terminal window, with multiple functionalities, using only 2 custom HTML tags, so you can use it without having to write a single line of JavaScript yourself! 
+**animated-terminal.js** lets you render an animated terminal window with multiple functionalities, using only 2 custom HTML tags, so you can use it without having to write a single line of JavaScript yourself! 
 
 It uses **promises** and **async**/**await**, all in **vanilla Javascript**, so you don't need ANY additional library.
 
@@ -27,8 +27,8 @@ Include **animated-terminal.js** in your project from a CDN, using the `<script>
 
 1. First you need to create the terminal window, which is the wrapper, by using the `<terminal-window>` tag.
 2. Then, inside the `<terminal-window>` wrapper, you can insert each lines with the `<terminal-line>` tag.
-<br>
-By default each `<terminal-line>` will be an *output* line, but you can make them *input* lines by adding the attribute `data="input"` to the `<terminal-line>` tag.
+
+By default each `terminal-line>` will be an *output* line, but you can make them *input* lines by adding the attribute `data="input"` to the `<terminal-line>` tag.
 
 It's as simple as that!
 
@@ -127,7 +127,7 @@ If the same attribute is specified for both the `<terminal-window>` and `<termin
 
 Inside the `<terminal-window>` wrapper, **one** `<img>` tag can be inserted (**note:** any further `<img>` tags will be automatically removed) to show an image, video or GIF.
 
-The `<img>` tag content will be shown as an overlay inside the terminal window (whose height will be automatically set to max-height) with the animation following the position of the `<img>` tag with respect to the other `<terminal-line>` tags in the `<terminal-window>`.
+The `<img>` tag content will be shown as an overlay inside the terminal window (whose height will be automatically set to `max-height`) with the animation following the position of the `<img>` tag with respect to the other `<terminal-line>` tags in the `<terminal-window>`.
 
 The `<img>` tag content, once shown, can be manually minimised by clicking on it.
 <br>
