@@ -1226,7 +1226,6 @@ class TerminalLine extends HTMLElement {
         if (this.data == 'input') {
             elem.innerHTML = this.PS1;
             elem.classList.add('ps1');
-            this.PS1Element = elem;
             this.line.prepend(elem)
         } else if (this.data == 'prompt') {
             elem.innerHTML = `${this.promptChar} `;
