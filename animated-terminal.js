@@ -247,6 +247,7 @@ class TerminalWindow extends HTMLElement {
         this.DATA_TYPES = ['input','prompt','progress','output'];
         // Wait for terminal-lines to load, then continue
         this.linesReady().then(() => {
+            this.toggleStatic();
             if (!this.static) {
                 this.setTerminal();
                 if (this.init) {
@@ -864,6 +865,23 @@ class TerminalWindow extends HTMLElement {
                 this.mutationObserver.disconnect();
             }
         }, {passive: true})
+    }
+
+    toggleStatic() {
+        let observer = new MutationObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.target.hasAttribute('static')) {
+                    console.log(true)
+                } else
+                    console.log(false)
+            })
+        })
+        observer.observe(this, 
+            {
+            attributes: true,
+            attributeFilter: ["static"]
+            }
+        )
     }
 }
 
