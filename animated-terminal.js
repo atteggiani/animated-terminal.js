@@ -134,6 +134,7 @@ terminalTemplate.innerHTML = `
 
         .restart-button-wrapper {
             position: sticky;
+            height: fit-content;
             top: var(--top);
             z-index: 2;
         }
@@ -148,7 +149,7 @@ terminalTemplate.innerHTML = `
             width: max-content;
             text-align: center;
             top: 0px;
-            right: var(--right);
+            right: -15px;
         }
 
         .restart-button:hover {
@@ -160,7 +161,7 @@ terminalTemplate.innerHTML = `
             height: var(--height);
             top: 0px;
             margin-top: 0px;
-            right: 90px;
+            right: var(--right);
             z-index: 0;
         }
         
@@ -567,8 +568,9 @@ class TerminalWindow extends HTMLElement {
         wrapper.appendChild(restart);
         this.window.prepend(wrapper);
         const windowStyle = getComputedStyle(this.window);
-        wrapper.setAttribute("style",`--top: ${parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom)}px;`);
-        restart.setAttribute("style",`--right: -15px;`);
+        // let top = parseFloat(windowStyle.height);
+        let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
+        wrapper.setAttribute("style",`--top: ${top}px;`);
         hide(restart);
     }
 
@@ -599,7 +601,8 @@ class TerminalWindow extends HTMLElement {
         wrapper.classList.add('fast-button-wrapper');
         wrapper.appendChild(fast);
         this.window.prepend(wrapper);
-        fast.setAttribute("style",`--top: ${11-wrapper.offsetTop}px; --right: -15px;`);
+        let top = -(parseFloat(getComputedStyle(fast).fontSize) + parseFloat(getComputedStyle(this.window).paddingTop))/2;
+        fast.setAttribute("style",`--top: ${top}px; --right: -15px;`);
         hide(fast);
     }
 
@@ -612,12 +615,13 @@ class TerminalWindow extends HTMLElement {
         this.generateObservers();
         this.setImg();
         this.generateImgMinimiser();
+        this.setWindow();
     }
 
     setWindow() {
        /**
         * Sets terminal window height
-        */ 
+        */
        this.window.style.height = getComputedStyle(this.window).height;
     }
 
@@ -645,7 +649,10 @@ class TerminalWindow extends HTMLElement {
             imgIconWrapper.appendChild(imgIcon);
             // Set wrapper height and top
             const windowStyle = getComputedStyle(this.window);
-            imgIconWrapper.setAttribute('style', `--height: ${this.window.scrollHeight}px; --top: ${parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom)}px;`);
+            let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
+            let height = this.window.scrollHeight;
+            let right = measureText(this.restartButton) + parseFloat(getComputedStyle(this.restartButton).right);
+            imgIconWrapper.setAttribute('style', `--height: ${height}px; --top: ${top}px; --right: ${right}px;`);
             this.img.img.addEventListener("click", this.minimiseImg.bind(this), {passive: true})
             imgIcon.addEventListener("click", this.maximiseImg.bind(this), {passive: true})
         }
@@ -783,7 +790,7 @@ class TerminalWindow extends HTMLElement {
         intersectionObserver.observe(this);
     }
 
-    scrollToTop() {
+    async scrollToTop() {
     // Scroll to the top of the window.
         this.window.scrollTop = 0;
         return new Promise( async resolve => {
@@ -794,15 +801,25 @@ class TerminalWindow extends HTMLElement {
         })
     }
     
-    scrollToBottom() {
+    async scrollToBottom() {
     // Scroll to the bottom of the window.
-        this.window.scrollTop = this.window.scrollHeight;
-        return new Promise( async resolve => {
-            while (this.window.scrollTop != this.window.scrollHeight) {
-                await sleep(1); //Should find and better way to do this
-            }
-            resolve();
-        })
+        let maxHeight = parseFloat(getComputedStyle(this.window).maxHeight);
+        await sleep(20); // CHANGE!!!
+        this.window.scrollTo(0,this.window.scrollHeight);
+        const check = () => this.window.scrollTop == this.window.scrollHeight - maxHeight;
+    
+        if (check()) {
+            return
+        } else {                  
+            return new Promise(resolve => {
+                const timer = setInterval(() => {
+                    if (check()) {
+                        clearInterval(timer);
+                        resolve();
+                    }
+                }, 10)
+            })
+        }
     }
     
     scrollOneLine(line) {
