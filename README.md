@@ -20,15 +20,15 @@ It uses **promises** and **async**/**await**, all in **vanilla Javascript**, so 
 Include **animated-terminal.js** in your project from a CDN, using the `<script>` tag.
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/atteggiani/animated-terminal/animated-terminal.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/atteggiani/animated-terminal@2.0/animated-terminal.min.js" defer></script>
 ```
 
 ## Usage
 
 1. First you need to create the terminal window, which is the wrapper, by using the `<terminal-window>` tag.
-2. Then, inside the `<terminal-window>` wrapper, you can insert each lines with the `<terminal-line>` tag.
+2. Then, inside the `<terminal-window>` wrapper, you can insert each line with the `<terminal-line>` tag.
 
-By default each `terminal-line>` will be an *output* line, but you can make them *input* lines by adding the attribute `data="input"` to the `<terminal-line>` tag.
+By default each `<terminal-line>` will be an *output* line, but you can make them *input* lines by adding the attribute `data="input"` to the `<terminal-line>` tag.
 
 It's as simple as that!
 
@@ -82,7 +82,7 @@ You can assign a number of attributes to the `<terminal-window>` and `<terminal-
 
 Any attribute assigned to `<terminal-window>` will affect the whole terminal, while attributes assigned to `<terminal-line>` will only be valid for that specific line. 
 <br>
-If the same attribute is specified for both the `<terminal-window>` and `<terminal-line>`, the `<terminal-line>` attribute value will be applied for the current line.
+If the same attribute is specified for both the `<terminal-window>` and `<terminal-line>`, the `<terminal-line>` attribute value will take precedence and be applied for the current line.
 
 #### `<terminal-window>` attributes
 
@@ -103,7 +103,7 @@ If the same attribute is specified for both the `<terminal-window>` and `<termin
 | directory | *str* | Directory path to insert before the *inputChar* in every 'input' line of the terminal. |
 | PS1 | *str*, *HTML*| String to insert before the 'input' line  for the entire terminal. It entirely replaces both *directory* and *inputChar*. Can be formatted as HTML code to include styling.|
 | init | - | If present, start the terminal animation as soon as the page loads, even if the terminal is not inside the viewport.|
-| static | - | If present, create a static terminal without any animation.|
+| static | - | Turns terminal into static mode, with no animation.|
 
 <br>
 
@@ -127,18 +127,18 @@ If the same attribute is specified for both the `<terminal-window>` and `<termin
 
 Inside the `<terminal-window>` wrapper, **one** `<img>` tag can be inserted (**note:** any further `<img>` tags will be automatically removed) to show an image, video or GIF.
 
-The `<img>` tag content will be shown as an overlay inside the terminal window (whose height will be automatically set to `max-height`) with the animation following the position of the `<img>` tag with respect to the other `<terminal-line>` tags in the `<terminal-window>`.
+The `<img>` tag content will be shown as an overlay inside the terminal window (whose height will be automatically set to `max-height`). The animation will follow the order of appearance of the `<terminal-line>` tags and `<img>` tag in the `<terminal-window>`.
 
 The `<img>` tag content, once shown, can be manually minimised by clicking on it.
 <br>
 It can then be maximised again by clicking on the *IMG* icon at the bottom right of the terminal.
 
-The `<img>` tag can have the following attributes:
+The `<img>` tag inside `<terminal-window>` can have the following attributes:
 
 | Attribute | Options or *type(s)* [Default] | Description |
 | --- | --- | --- |
-| imageDelay | *str*, *int*, [1500] | Delay before the `<img>` content gets shown, in milliseconds. |
-| imageTime | *str*, *int*, 'inf', [3000] | Amount of time for the `<img>` content to be shown before being minimised, in milliseconds. 'inf' will keep the image maximised unless manually minimised. |
+| imageDelay | *str*, *int*, [1500] | Delay before the `<img>` content is shown within the animation, in milliseconds. |
+| imageTime | *str*, *int*, 'inf', [3000] | Amount of time for the `<img>` content to stay maximised before being minimised, in milliseconds. 'inf' will keep the content maximised unless manually minimised. |
 
 Example:
 ```html
@@ -146,7 +146,7 @@ Example:
     <terminal-line data="input">python3</terminal-line>
     <terminal-line data="prompt">import matplotlib.pyplot as plt</terminal-line>
     <terminal-line data="prompt">plt.plot([1,2,3],[1,2,3]); plt.show()</terminal-line>
-    <img imageTime='inf' src="test/plot.png">
+    <img imageTime='inf' src="plot.png">
 </terminal-window>
 ```
 will be rendered as:
