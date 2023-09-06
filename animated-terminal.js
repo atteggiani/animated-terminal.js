@@ -308,44 +308,30 @@ class TerminalWindow extends HTMLElement {
        return parseFloat(this.getAttribute('startDelay')) || 300;
     }
     
-    get _imageDelay() {
+    get imageDelay() {
         /**
         * Resets lineDelay property.
         */
         if (this.img && this.img.img.hasAttribute('imageDelay')) {
-            this.imageDelay = parseFloat(this.img.img.getAttribute('imageDelay'));
+            return parseFloat(this.img.img.getAttribute('imageDelay'));
         } else if (this.hasAttribute('imageDelay')) {
-            this.imageDelay = parseFloat(this.getAttribute('imageDelay'));
+            return parseFloat(this.getAttribute('imageDelay'));
         } else {
-            this.imageDelay = 1500;
+            return 1500;
         }
     }
-
-    set _imageDelay(time) {
-        /**
-        * Sets lineDelay property.
-        */
-        this.imageDelay = time;
-    }
     
-    get _imageTime() {
+    get imageTime() {
         /**
         * Resets lineDelay property.
         */
         if (this.img && this.img.img.hasAttribute('imageTime')) {
-            this.imageTime = parseFloat(this.img.img.getAttribute('imageTime')) ? parseFloat(this.img.img.getAttribute('imageTime')) : this.img.img.getAttribute('imageTime');
+            return parseFloat(this.img.img.getAttribute('imageTime')) ? parseFloat(this.img.img.getAttribute('imageTime')) : this.img.img.getAttribute('imageTime');
         } else if (this.hasAttribute('imageTime')) {
-            this.imageTime = parseFloat(this.getAttribute('imageTime')) ? parseFloat(this.getAttribute('imageTime')) : this.img.img.getAttribute('imageTime');
+            return parseFloat(this.getAttribute('imageTime')) ? parseFloat(this.getAttribute('imageTime')) : this.img.img.getAttribute('imageTime');
         } else {
-            this.imageTime = 3000;
+            return 3000;
         }
-    }
-
-    set _imageTime(time) {
-        /**
-        * Sets lineDelay property.
-        */
-        this.imageTime = time;
     }
 
     get progressChar() {
@@ -525,15 +511,6 @@ class TerminalWindow extends HTMLElement {
         })
     }
 
-    resetDelays() {
-        this.lines.forEach(line => {
-            line._lineDelay;
-            line._typingDelay;
-        })
-        this._imageDelay;
-        this._imageTime;
-    }
-
     hideLines() {
         /**
         * Hide lines inside the terminal
@@ -599,6 +576,14 @@ class TerminalWindow extends HTMLElement {
         /**
         * Generate fast button and adds it hidden to 'this.window'
         */
+        const nullifyDelays = () => {
+            this.lines.forEach(line => {
+                line._lineDelay = 0;
+                line._typingDelay = 0;
+            })
+            this._imageDelay = 0;
+            this._imageTime = 0;
+        }
         const fast = document.createElement('div')
         fast.setAttribute('part','fast-button')
         const fastFunction = async (e) => {
@@ -743,7 +728,6 @@ class TerminalWindow extends HTMLElement {
             }
         }
         hide(this.fastButton);
-        this.resetDelays();
         if (!this.static) show(this.restartButton);
     }
 
@@ -1003,7 +987,6 @@ class TerminalLine extends HTMLElement {
         this.line = this.shadowRoot.querySelector(".terminal-line");
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
-        this.resetDelays();
         this.addEventListener('click', e => this.window.focus(), {passive: true})
         this.ready = true;
     }
@@ -1031,56 +1014,35 @@ class TerminalLine extends HTMLElement {
         }
     }
     
-    get _lineDelay() {
+    get lineDelay() {
         /**
         * Resets lineDelay property.
         */
         if (this.hasAttribute('lineDelay')) {
-            this.lineDelay = parseFloat(this.getAttribute('lineDelay'));
+            return parseFloat(this.getAttribute('lineDelay'));
         } else if (this.window.hasAttribute('lineDelay')) {
-            this.lineDelay = parseFloat(this.window.getAttribute('lineDelay'));
+            return parseFloat(this.window.getAttribute('lineDelay'));
         } else if (["input","prompt"].includes(this.data)) {
-            this.lineDelay = 600;
+            return 600;
         } else {
-            this.lineDelay = 100;
+            return 100;
         }
     }
-
-    set _lineDelay(time) {
-        /**
-        * Sets lineDelay property.
-        */
-        this.lineDelay = time;
-    }
     
-    get _typingDelay() {
+    get typingDelay() {
         /**
         * Resets typingDelay property.
         */
         if (this.hasAttribute('typingDelay')) {
-            this.typingDelay = parseFloat(this.getAttribute('typingDelay'));
+            return parseFloat(this.getAttribute('typingDelay'));
         } else if (this.window.hasAttribute('typingDelay')) {
-            this.typingDelay = parseFloat(this.window.getAttribute('typingDelay'));
+            return parseFloat(this.window.getAttribute('typingDelay'));
         } else if (["progress"].includes(this.data)) {
-            this.typingDelay = 30;
+            return 30;
         } else {
-            this.typingDelay = 80;
+            return 80;
         }
     }
-    
-    set _typingDelay(time) {
-        /**
-        * Sets typingDelay property.
-        */
-        this.typingDelay = time;
-    }
-    
-    resetDelays() {
-        this._lineDelay;
-        this._typingDelay;
-        this.window._imageDelay;
-        this.window._imageTime;
-    } 
     
     get progressChar() {
         /**
