@@ -20,7 +20,7 @@ It uses **promises** and **async**/**await**, all in **vanilla Javascript**, so 
 Include **animated-terminal.js** in your project from a CDN, using the `<script>` tag.
 
 ```html
-<script src="https://cdn.jsdelivr.net/gh/atteggiani/animated-terminal@2.0/animated-terminal.min.js" defer></script>
+<script src="https://cdn.jsdelivr.net/gh/atteggiani/animated-terminal@2.1/animated-terminal.min.js" defer></script>
 ```
 
 ## Usage
