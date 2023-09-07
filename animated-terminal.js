@@ -630,6 +630,7 @@ class TerminalWindow extends HTMLElement {
         let observer = new ResizeObserver(entries => {
             entries.forEach(entry => {
                 if (entry.contentRect.height) {
+                    observer.disconnect();
                     this.setSizes();
                 }
             })
