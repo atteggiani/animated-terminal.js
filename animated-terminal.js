@@ -567,10 +567,6 @@ class TerminalWindow extends HTMLElement {
         wrapper.classList.add('restart-button-wrapper');
         wrapper.appendChild(restart);
         this.window.prepend(wrapper);
-        const windowStyle = getComputedStyle(this.window);
-        // let top = parseFloat(windowStyle.height);
-        let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
-        wrapper.setAttribute("style",`--top: ${top}px;`);
         hide(restart);
     }
 
@@ -639,16 +635,21 @@ class TerminalWindow extends HTMLElement {
     }
 
     setSizes() {
-        // img-icon wrapper height and top
+        // Set restart wrapper
         const windowStyle = getComputedStyle(this.window);
-        let el = this.imgIcon.parentElement;
         let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
-        let height = this.window.scrollHeight;
-        let right = this.restartButton.offsetWidth + parseFloat(getComputedStyle(this.restartButton).right) + el.offsetWidth;
-        el.setAttribute('style', `--height: ${height}px; --top: ${top}px; --right: ${right}px;`);
-        // Set img wrapper
-        el = this.img.img.parentElement;
-        el.setAttribute('style', `max-height: unset; --height: ${this.window.scrollHeight}px`);
+        this.restartButton.parentElement.setAttribute("style",`--top: ${top}px;`);
+        if (this.img) {
+            // img-icon wrapper height and top
+            let el = this.imgIcon.parentElement;
+            let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
+            let height = this.window.scrollHeight;
+            let right = this.restartButton.offsetWidth + parseFloat(getComputedStyle(this.restartButton).right) + el.offsetWidth;
+            el.setAttribute('style', `--height: ${height}px; --top: ${top}px; --right: ${right}px;`);
+            // Set img wrapper
+            el = this.img.img.parentElement;
+            el.setAttribute('style', `max-height: unset; --height: ${this.window.scrollHeight}px`);
+        }
     }
 
     generateImgMinimiser() {
