@@ -612,10 +612,11 @@ class TerminalWindow extends HTMLElement {
         */
         this.generateRestartButton();
         this.generateFastButton();
-        this.generateObservers();
+        this.generateScrollObservers();
         this.setImg();
         this.generateImgMinimiser();
         this.setWindow();
+        this.generateSizeObserver();
     }
 
     setWindow() {
@@ -623,6 +624,30 @@ class TerminalWindow extends HTMLElement {
         * Sets terminal window height
         */
        this.window.style.height = getComputedStyle(this.window).height;
+    }
+
+    generateSizeObserver() {
+        let observer = new ResizeObserver(entries => {
+            entries.forEach(entry => {
+                if (entry.contentRect.height) {
+                    this.setSizes();
+                }
+            })
+        })
+        observer.observe(this.window);
+    }
+
+    setSizes() {
+        // img-icon wrapper height and top
+        const windowStyle = getComputedStyle(this.window);
+        let el = this.imgIcon.parentElement;
+        let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
+        let height = this.window.scrollHeight;
+        let right = this.restartButton.offsetWidth + parseFloat(getComputedStyle(this.restartButton).right) + el.offsetWidth;
+        el.setAttribute('style', `--height: ${height}px; --top: ${top}px; --right: ${right}px;`);
+        // Set img wrapper
+        el = this.img.img.parentElement;
+        el.setAttribute('style', `max-height: unset; --height: ${this.window.scrollHeight}px`);
     }
 
     generateImgMinimiser() {
@@ -647,12 +672,6 @@ class TerminalWindow extends HTMLElement {
             imgIconWrapper.classList.add('img-icon-wrapper');
             this.window.appendChild(imgIconWrapper);
             imgIconWrapper.appendChild(imgIcon);
-            // Set wrapper height and top
-            const windowStyle = getComputedStyle(this.window);
-            let top = parseFloat(windowStyle.height) - parseFloat(windowStyle.paddingTop) - parseFloat(windowStyle.paddingBottom);
-            let height = this.window.scrollHeight;
-            let right = measureText(this.restartButton) + parseFloat(getComputedStyle(this.restartButton).right);
-            imgIconWrapper.setAttribute('style', `--height: ${height}px; --top: ${top}px; --right: ${right}px;`);
             this.img.img.addEventListener("click", this.minimiseImg.bind(this), {passive: true})
             imgIcon.addEventListener("click", this.maximiseImg.bind(this), {passive: true})
         }
@@ -671,9 +690,6 @@ class TerminalWindow extends HTMLElement {
     setImg() {
         if (this.img) {
             let minWidth = parseFloat(getComputedStyle(this.window).minWidth);
-            // Set wrapper height
-            let wrapper = this.img.img.parentElement;
-            wrapper.setAttribute('style', `max-height: unset; --height: ${this.window.scrollHeight}px`);
             // Set img sises
             let aspectRatio = this.img.img.width/this.img.img.height;
             let maxHeight = parseFloat(getComputedStyle(this.window).maxHeight) - 25;
@@ -827,7 +843,7 @@ class TerminalWindow extends HTMLElement {
         this.window.scrollBy(0,nPix);
     }
 
-    generateObservers() {
+    generateScrollObservers() {
         const intersectionFunction = async entry => {
             if (entry.intersectionRatio == 1) {
                 intersectionObserver.unobserve(entry.target);
