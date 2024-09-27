@@ -1160,6 +1160,7 @@ class TerminalLine extends HTMLElement {
             }
         }
         this.nodes = Array.from(this.childNodes);
+        this.nodesNotHidden = this.nodes.filter(node => getComputedStyle(node).display != 'none');
     }
 
     showPS1() {
@@ -1231,8 +1232,8 @@ class TerminalLine extends HTMLElement {
         show(this);
         this.addCursor();
         await sleep(this.lineDelay, this.window.abortController.signal);
-        for (let i=0; i<this.nodes.length; i++) {
-            let node = this.nodes[i];
+        for (let i=0; i<this.nodesNotHidden.length; i++) {
+            let node = this.nodesNotHidden[i];
             let text = textArray[i];
             for (let char of text) {
                 await sleep(this.typingDelay, this.window.abortController.signal);
@@ -1244,7 +1245,7 @@ class TerminalLine extends HTMLElement {
 
     getAndRemoveTextContent() {
         let textArray = [];
-        for (let node of this.nodes) {
+        for (let node of this.nodesNotHidden) {
             textArray.push(node.textContent);
             node.textContent = "";
         }
