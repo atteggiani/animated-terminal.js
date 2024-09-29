@@ -252,14 +252,19 @@ class TerminalWindow extends HTMLElement {
     */
     constructor() {
         super();
+        this.DATA_TYPES = ['input','prompt','progress','output'];
         // Attach shadowDOM
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(terminalTemplate.content.cloneNode(true));
+        console.log('Terminal window created');
+    }
+
+    connectedCallback() {
+        console.log('Terminal window connected');
         // Keep only proper lines
         this.keepLines();
         // Apply colormode
         this.applyMode();
-        this.DATA_TYPES = ['input','prompt','progress','output'];
         this.abortController = new AbortController();
         // Wait for terminal-lines to load, then continue
         this.linesReady().then(() => {
@@ -1016,9 +1021,12 @@ class TerminalLine extends HTMLElement {
     //  */
     constructor() {
         super();
+        this.ALLOWED_NODES = ["span"];
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(lineTemplate.content.cloneNode(true));
-        this.ALLOWED_NODES = ["span"];
+    }
+
+    connectedCallback() {
         this.line = this.shadowRoot.querySelector(".terminal-line");
         this.keepNodes();
         this.generatePS1AndPromptCharElements();
