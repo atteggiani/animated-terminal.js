@@ -17,9 +17,7 @@ function sleep(time, signal = null) {
     /**
     * Sleep for an amount of time with the possibility to be aborted
     */
-    if (signal && signal?.aborted) {
-		return
-	} else {
+    if (! signal?.aborted) {
         return new Promise((resolve,reject) => {
             const timeout = setTimeout(resolve, time);
             if (signal) {
@@ -31,7 +29,6 @@ function sleep(time, signal = null) {
             }
         });
     }
-
 }
 
 function hide(element) {
@@ -41,11 +38,13 @@ function hide(element) {
     element.style.visibility = 'hidden';
 }
 
-function show(element) {
+function show(element, signal = null) {
     /**
     * Change element's style to 'visible'
     */
-    element.style.visibility = 'visible';
+    if (! signal?.aborted) {
+        element.style.visibility = 'visible';
+    }
 }
 
 const terminalTemplate = document.createElement('template');
@@ -256,20 +255,18 @@ class TerminalWindow extends HTMLElement {
         // Attach shadowDOM
         this.attachShadow({ mode: "open" });
         this.shadowRoot.appendChild(terminalTemplate.content.cloneNode(true));
-        console.log('Terminal window created');
     }
 
     connectedCallback() {
-        console.log('Terminal window connected');
         // Keep only proper lines
         this.keepLines();
         // Apply colormode
         this.applyMode();
-        this.abortController = new AbortController();
+        this.createAbortControllers();
         // Wait for terminal-lines to load, then continue
         this.linesReady().then(() => {
             this.setTerminal();
-            this.toggleStatic();
+            this.applyStatic();
             this.initialise();
         })
     }
@@ -428,6 +425,21 @@ class TerminalWindow extends HTMLElement {
             return !!attr
         }
     }
+    
+    async resetTerminal() {
+        this.hideAll();
+        this.abortControllerFast.abort();
+        this.abortControllerReset.abort();
+        await sleep(1)
+        this.setTerminal();
+        this.applyStatic();
+        this.restartFunction();
+    }
+
+    createAbortControllers() {
+        this.abortControllerFast = new AbortController();
+        this.abortControllerReset = new AbortController();
+    }
 
     linesReady() {
         let lineReadyPromises = [];
@@ -537,20 +549,20 @@ class TerminalWindow extends HTMLElement {
         * Show PS1 and Prompt Char for terminal reset
         */
         this.lines.forEach(line => {
-            show(line);
+            show(line, this.abortControllerReset.signal);
             let elem = line.shadowRoot?.querySelector('.ps1, .promptChar');
             if (elem) {
-                show(elem);
+                show(elem, this.abortControllerReset.signal);
             }
         })
     }
 
     async restartFunction() {
-        this.abortController = new AbortController();
+        this.createAbortControllers();
         this.hideAll();
-        this.mutationObserver.disconnect();
+        this.mutationObserverLineBeingTyped.disconnect();
         await this.scrollToTop();
-        this.initialise();
+        this.initialiseWhenVisible();
     }
 
     generateRestartButton() {
@@ -592,7 +604,7 @@ class TerminalWindow extends HTMLElement {
         const fastFunction = async (e) => {
             hide(fast);
             this.window.focus();
-            this.abortController.abort();
+            this.abortControllerFast.abort();
         }
         fast.addEventListener('click', fastFunction, {passive: true});
         fast.classList.add('fast-button');
@@ -686,11 +698,11 @@ class TerminalWindow extends HTMLElement {
 
     minimiseImg(e) {
         hide(this.img.img);
-        show(this.imgIcon);
+        show(this.imgIcon, this.abortControllerReset.signal);
     }
     
     maximiseImg(e) {
-        show(this.img.img);
+        show(this.img.img, this.abortControllerReset.signal);
         hide(this.imgIcon);
     }
 
@@ -730,7 +742,7 @@ class TerminalWindow extends HTMLElement {
 
     showAll() {
         if (this.img) {
-            show(this.imgIcon);
+            show(this.imgIcon, this.abortControllerReset.signal);
         }
         this.showLines();
     }   
@@ -740,7 +752,7 @@ class TerminalWindow extends HTMLElement {
          * Start the animation and render the lines
          */
         this.autoScroll();
-        await sleep(this.startDelay, this.abortController.signal);
+        await sleep(this.startDelay, this.abortControllerFast.signal);
         show(this.fastButton);
         for (let i=0; i<this.lines.length; i++) {
             let line = this.lines[i];
@@ -758,22 +770,22 @@ class TerminalWindow extends HTMLElement {
             }
         }
         hide(this.fastButton);
-        if (!this.static) show(this.restartButton);
+        if (!this.static) show(this.restartButton, this.abortControllerReset.signal);
     }
 
     async showImage() {
         if (this.imageTime != 0) {
-            await sleep(this.imageDelay, this.abortController.signal);
+            await sleep(this.imageDelay, this.abortControllerFast.signal);
             this.maximiseImg();
         }
         if (this.imageTime != 'inf') {
-            await sleep(this.imageTime, this.abortController.signal);
+            await sleep(this.imageTime, this.abortControllerFast.signal);
             this.minimiseImg();
         }
     }
 
     initialise() {
-        if (this.init) {
+        if (this.init || this.static) {
             this.initialiseAnimation();
         } else {
             this.initialiseWhenVisible();
@@ -786,23 +798,9 @@ class TerminalWindow extends HTMLElement {
         */
         let intersectionObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                let mutationObserver = new MutationObserver(_entry => {
-                        let __entry = _entry[0];
-                        if (__entry.target.hasAttribute('static')) {                    
-                            intersectionObserver.disconnect();
-                            mutationObserver.disconnect();
-                            this.initialiseAnimation();
-                        }
-                    })
-                mutationObserver.observe(this, 
-                    {
-                    attributes: true,
-                    attributeFilter: ["static"]
-                    }
-                )
+                console.log(entry);
                 if (entry.isIntersecting) {
                     intersectionObserver.disconnect();
-                    mutationObserver.disconnect();
                     this.initialiseAnimation();
                 }
             })
@@ -810,6 +808,7 @@ class TerminalWindow extends HTMLElement {
         {
             threshold: "0.4",
         })
+        console.log(getComputedStyle(this).display);
         intersectionObserver.observe(this);
     }
 
@@ -882,7 +881,7 @@ class TerminalWindow extends HTMLElement {
             }
         }
 
-        this.mutationObserver = new MutationObserver(entries => {
+        this.mutationObserverLineBeingTyped = new MutationObserver(entries => {
             entries.forEach(entry => {
                 if (entry.oldValue?.includes("isBeingTyped")) {
                     mutationFunction(entry)
@@ -896,7 +895,7 @@ class TerminalWindow extends HTMLElement {
         * Auto scrolls 1 line if the terminal content exceeds the terminal max-height.
         */
         this.lines.forEach(line => {
-            this.mutationObserver.observe(line,{
+            this.mutationObserverLineBeingTyped.observe(line,{
                 attributes: true,
                 attributeOldValue: true,
                 attributeFilter: ["class"]
@@ -904,21 +903,21 @@ class TerminalWindow extends HTMLElement {
         });
 
         this.addEventListener('wheel', e => {
-            this.mutationObserver.disconnect();
+            this.mutationObserverLineBeingTyped.disconnect();
         }, {passive: true})
 
         this.addEventListener('keydown', e => {
             if (['ArrowDown','Space','ArrowUp'].includes(e.code)) {
-                this.mutationObserver.disconnect();
+                this.mutationObserverLineBeingTyped.disconnect();
             }
         }, {passive: true})
     }
 
-    toggleStatic() {
+    applyStatic() {
         let observer = new MutationObserver(entries => {
             entries.forEach(entry => {
                 if (entry.target.hasAttribute('static')) {                    
-                    this.abortController.abort();
+                    this.abortControllerFast.abort();
                     hide(this.restartButton);
                 } else {
                     this.restartFunction();
@@ -931,6 +930,9 @@ class TerminalWindow extends HTMLElement {
             attributeFilter: ["static"]
             }
         )
+        if (this.static) {
+            this.abortControllerFast.abort();
+        }
     }
 }
 
@@ -1172,11 +1174,11 @@ class TerminalLine extends HTMLElement {
     }
 
     showPS1() {
-        show(this.shadowRoot.querySelector('.ps1'));
+        show(this.shadowRoot.querySelector('.ps1'), this.window.abortControllerReset.signal);
     }
     
     showPromptChar() {
-        show(this.shadowRoot.querySelector('.promptChar'));
+        show(this.shadowRoot.querySelector('.promptChar'), this.window.abortControllerReset.signal);
     }
 
     async type() {
@@ -1187,15 +1189,15 @@ class TerminalLine extends HTMLElement {
             this.showPS1();
             await this.typeInput();
         } else if (this.data == 'progress') {
-            await sleep(this.lineDelay, this.window.abortController.signal);
+            await sleep(this.lineDelay, this.window.abortControllerFast.signal);
             await this.typeProgress();
             return;
         } else if (this.data == 'prompt') {
             this.showPromptChar();
             await this.typeInput();
         } else {
-            await sleep(this.lineDelay, this.window.abortController.signal);
-            show(this)
+            await sleep(this.lineDelay, this.window.abortControllerFast.signal);
+            show(this, this.window.abortControllerReset.signal)
         }
 
     }
@@ -1218,9 +1220,9 @@ class TerminalLine extends HTMLElement {
         const progressSteps = Math.round((parseInt(getComputedStyle(this).width)*0.8*(this.progressPercent/100))/progressCharWidth);
         let percent = 0;
         this.textContent = '0%';
-        show(this);
+        show(this, this.window.abortControllerReset.signal);
         for (let i=1; i<=progressSteps; i++) {
-            await sleep(this.typingDelay, this.window.abortController.signal);
+            await sleep(this.typingDelay, this.window.abortControllerFast.signal);
             percent = Math.round(this.progressPercent/progressSteps*i)
             this.textContent = `${this.progressChar.repeat(i)} ${percent}%`;
         }
@@ -1237,14 +1239,14 @@ class TerminalLine extends HTMLElement {
          * Animate an input line.
          */
         let textArray = this.getAndRemoveTextContent();
-        show(this);
+        show(this, this.window.abortControllerReset.signal);
         this.addCursor();
-        await sleep(this.lineDelay, this.window.abortController.signal);
+        await sleep(this.lineDelay, this.window.abortControllerFast.signal);
         for (let i=0; i<this.nodesNotHidden.length; i++) {
             let node = this.nodesNotHidden[i];
             let text = textArray[i];
             for (let char of text) {
-                await sleep(this.typingDelay, this.window.abortController.signal);
+                await sleep(this.typingDelay, this.window.abortControllerFast.signal);
                 node.textContent += char;
             }
         }
