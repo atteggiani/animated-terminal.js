@@ -1,6 +1,6 @@
 /**
  * @author Davide Marchegiani <davide.marchegiani@gmail.com>
- * @version 3.0
+ * @version 3.1
  */
 
 'use strict';
@@ -798,7 +798,6 @@ class TerminalWindow extends HTMLElement {
         */
         let intersectionObserver = new IntersectionObserver(entries => {
             entries.forEach(entry => {
-                console.log(entry);
                 if (entry.isIntersecting) {
                     intersectionObserver.disconnect();
                     this.initialiseAnimation();
@@ -808,7 +807,6 @@ class TerminalWindow extends HTMLElement {
         {
             threshold: "0.4",
         })
-        console.log(getComputedStyle(this).display);
         intersectionObserver.observe(this);
     }
 
